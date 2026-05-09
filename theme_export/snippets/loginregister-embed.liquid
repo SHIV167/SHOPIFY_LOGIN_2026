@@ -1,0 +1,30 @@
+{% comment %}
+  LoginRegister App - Embed Widget
+  Usage: {% render 'loginregister-embed' %}
+{% endcomment %}
+
+<div id="loginregister-widget" data-shop="{{ shop.permanent_domain }}"></div>
+
+<script>
+(function() {
+  const container = document.getElementById('loginregister-widget');
+  if (!container) return;
+  const shop = container.dataset.shop;
+  const appHost = 'https://your-app-domain.com'; // Replace with your app URL
+
+  const iframe = document.createElement('iframe');
+  iframe.src = `${appHost}/embed?shop=${encodeURIComponent(shop)}`;
+  iframe.style.width = '100%';
+  iframe.style.border = 'none';
+  iframe.style.minHeight = '420px';
+  iframe.setAttribute('allowtransparency', 'true');
+  container.appendChild(iframe);
+
+  window.addEventListener('message', function(e) {
+    if (e.origin !== appHost) return;
+    if (e.data && e.data.type === 'loginregister-resize') {
+      iframe.style.height = e.data.height + 'px';
+    }
+  });
+})();
+</script>

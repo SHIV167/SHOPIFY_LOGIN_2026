@@ -1,0 +1,32 @@
+{% comment %}
+  LoginRegister App - Theme Section
+  Add this section to your theme where you want the login/register form to appear.
+{% endcomment %}
+
+<section class="loginregister-section page-width">
+  <div class="loginregister-section__inner">
+    {% if section.settings.heading != blank %}
+      <h2 class="loginregister-section__heading">{{ section.settings.heading }}</h2>
+    {% endif %}
+    {% render 'loginregister-embed' %}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "LoginRegister",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Account Access"
+    }
+  ],
+  "presets": [
+    {
+      "name": "LoginRegister"
+    }
+  ]
+}
+{% endschema %}
