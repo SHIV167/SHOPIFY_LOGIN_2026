@@ -35,13 +35,25 @@ export async function POST(req: NextRequest) {
       where: { shopId_email: { shopId: shop.id, email } },
     });
 
-    if (!customer) {
+    if (!customer || !customer.passwordHash) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
     }
 
     const valid = await bcrypt.compare(password, customer.passwordHash);
     if (!valid) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+    }
+
+    // Check if email verification is required
+    const settings = await prisma.loginRegisterSettings.findUnique({
+      where: { shopId: shop.id },
+    });
+
+    if (settings?.requireEmailVerification && !customer.emailVerified) {
+      return NextResponse.json(
+        { error: 'Please verify your email before logging in.', requiresVerification: true },
+        { status: 403 }
+      );
     }
 
     await prisma.customer.update({
@@ -57,6 +69,7 @@ export async function POST(req: NextRequest) {
         firstName: customer.firstName,
         lastName: customer.lastName,
         phone: customer.phone,
+        emailVerified: customer.emailVerified,
       },
     });
   } catch (err) {

@@ -1,9 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
-export default function AdminPage() {
+function AdminContent() {
   const searchParams = useSearchParams();
   const shop = searchParams.get('shop') || '';
   const [customers, setCustomers] = useState<any[]>([]);
@@ -137,5 +137,13 @@ export default function AdminPage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function AdminPage() {
+  return (
+    <Suspense fallback={<main className="min-h-screen flex items-center justify-center p-6 bg-gray-50"><div className="h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-gray-900" /></main>}>
+      <AdminContent />
+    </Suspense>
   );
 }

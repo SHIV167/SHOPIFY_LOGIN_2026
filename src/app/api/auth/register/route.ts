@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
+import { createEmailVerificationToken, buildVerificationUrl } from '@/lib/tokens';
+import { sendEmail } from '@/lib/email';
 
 const registerSchema = z.object({
   shopDomain: z.string().min(1),
@@ -54,6 +56,41 @@ export async function POST(req: NextRequest) {
         phone,
       },
     });
+
+    // Check if email verification is required
+    const settings = await prisma.loginRegisterSettings.findUnique({
+      where: { shopId: shop.id },
+    });
+
+    const requireVerification = settings?.requireEmailVerification ?? false;
+
+    if (requireVerification) {
+      const token = await createEmailVerificationToken(customer.id);
+      const host = process.env.HOST || '';
+      const verifyUrl = buildVerificationUrl(token, host);
+
+      await sendEmail({
+        to: email,
+        subject: settings?.verificationEmailSubject || 'Verify your email address',
+        html: `<p>Hello ${firstName || ''},</p>
+               <p>Please verify your email by clicking the link below:</p>
+               <p><a href="${verifyUrl}">Verify Email</a></p>
+               <p>Or copy and paste this URL: ${verifyUrl}</p>`,
+        text: `Hello ${firstName || ''},\n\nPlease verify your email by visiting:\n${verifyUrl}`,
+      });
+
+      return NextResponse.json({
+        success: true,
+        requiresVerification: true,
+        message: 'Registration successful. Please check your email to verify your account.',
+        customer: {
+          id: customer.id,
+          email: customer.email,
+          firstName: customer.firstName,
+          lastName: customer.lastName,
+        },
+      });
+    }
 
     return NextResponse.json({
       success: true,

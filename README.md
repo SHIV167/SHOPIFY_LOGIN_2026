@@ -6,6 +6,9 @@ A Shopify embedded app for customer login and registration, built to work alongs
 
 - Customer registration with email/password
 - Customer login
+- Email verification flow
+- Password reset (forgot password)
+- Google OAuth social login
 - Admin dashboard to view registered customers
 - Toggle settings (registration, social login, email verification)
 - Embeddable login/register widget for Shopify themes
@@ -42,6 +45,26 @@ A Shopify embedded app for customer login and registration, built to work alongs
    ```bash
    npm run dev
    ```
+
+## Email Configuration
+
+To send verification and password-reset emails, configure an email provider in `.env`:
+
+- `EMAIL_PROVIDER=resend` (recommended)
+- `RESEND_API_KEY=re_xxxxxxxx`
+- `EMAIL_FROM=noreply@your-domain.com`
+
+Supported providers: `resend`, `sendgrid`, `ses`, `console` (logs to stdout in development).
+
+## Google OAuth (Social Login)
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/) and create OAuth 2.0 credentials
+2. Add your app's domain to **Authorized JavaScript origins**
+3. Add `https://your-app-domain.com/api/auth/oauth/callback` to **Authorized redirect URIs**
+4. Copy Client ID and Client Secret to `.env`:
+   - `GOOGLE_CLIENT_ID=...`
+   - `GOOGLE_CLIENT_SECRET=...`
+5. In the admin dashboard, enable **Social Login** for the store
 
 ## Shopify App Setup
 

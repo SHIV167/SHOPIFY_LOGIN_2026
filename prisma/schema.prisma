@@ -93,7 +93,7 @@ model Customer {
 
   // Identity
   email         String
-  passwordHash  String
+  passwordHash  String?
   phone         String?
 
   // Profile
@@ -120,6 +120,10 @@ model Customer {
   // Session tracking
   resetToken    String?
   resetTokenExpires DateTime?
+
+  // OAuth / Social login
+  provider      String?
+  providerId    String?
 
   // Metadata
   tags          String[]
