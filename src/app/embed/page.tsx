@@ -16,7 +16,9 @@ function EmbedContent() {
 
   const urlMode = searchParams.get('mode') as 'login' | 'register' | 'forgot' | null;
   const validMode = urlMode && ['login', 'register', 'forgot'].includes(urlMode) ? urlMode : 'login';
-  const [mode, setMode] = useState<'login' | 'register' | 'forgot'>(validMode);
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot' | 'customers'>(validMode);
+  const isAdmin = !!(searchParams.get('host') || searchParams.get('embedded'));
+  const [customers, setCustomers] = useState<any[]>([]);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -30,13 +32,14 @@ function EmbedContent() {
   const [needsVerification, setNeedsVerification] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState('');
 
-  // Fetch shop settings
+  // Fetch shop settings and customers
   useEffect(() => {
     if (!shop) return;
     fetch(`/api/customers?shop=${encodeURIComponent(shop)}`)
       .then((r) => r.json())
       .then((data) => {
         setSettings(data.settings ?? null);
+        setCustomers(data.customers || []);
         setSettingsLoading(false);
       })
       .catch(() => setSettingsLoading(false));
@@ -60,7 +63,7 @@ function EmbedContent() {
     postResize();
     const timer = setTimeout(postResize, 300);
     return () => clearTimeout(timer);
-  }, [mode, error, success, settings]);
+  }, [mode, error, success, settings, customers]);
 
   useEffect(() => {
     if (success && success.includes('Logged in successfully') && window.parent !== window) {
@@ -223,6 +226,16 @@ function EmbedContent() {
             }`}
           >
             Register
+          </button>
+        )}
+        {isAdmin && (
+          <button
+            onClick={() => { setMode('customers'); setError(''); setSuccess(''); setNeedsVerification(false); }}
+            className={`flex-1 py-2 text-sm font-medium rounded ${
+              mode === 'customers' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700'
+            }`}
+          >
+            Customers
           </button>
         )}
       </div>
@@ -401,6 +414,45 @@ function EmbedContent() {
             Back to Login
           </button>
         </form>
+      )}
+
+      {/* Customers list (admin only) */}
+      {mode === 'customers' && (
+        <div>
+          <p className="text-sm text-gray-600 mb-3">
+            {customers.length} customer{customers.length !== 1 ? 's' : ''} registered
+          </p>
+          {customers.length === 0 ? (
+            <p className="text-sm text-gray-500">No customers yet.</p>
+          ) : (
+            <div className="overflow-x-auto -mx-4 px-4">
+              <table className="min-w-full text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-2 py-1.5 text-left font-medium text-gray-700">Email</th>
+                    <th className="px-2 py-1.5 text-left font-medium text-gray-700">Name</th>
+                    <th className="px-2 py-1.5 text-left font-medium text-gray-700">Verified</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {customers.map((c) => (
+                    <tr key={c.id}>
+                      <td className="px-2 py-1.5 text-gray-900">{c.email}</td>
+                      <td className="px-2 py-1.5 text-gray-600">{c.firstName} {c.lastName}</td>
+                      <td className="px-2 py-1.5">
+                        <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium ${
+                          c.emailVerified ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {c.emailVerified ? 'Yes' : 'No'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
