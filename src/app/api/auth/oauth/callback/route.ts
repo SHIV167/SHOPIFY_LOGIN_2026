@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import prisma from '@/lib/prisma';
 import { signHmacSha256Hex } from '@/lib/hmac';
+import { createShopifyCustomer } from '@/lib/shopify-api';
 
 export const dynamic = 'force-dynamic';
 
@@ -151,6 +152,19 @@ export async function GET(req: NextRequest) {
           lastLoginAt: new Date(),
         },
       });
+    }
+
+    // Sync to Shopify if new customer
+    try {
+      await createShopifyCustomer(shop.shopifyDomain, shop.accessToken, {
+        email: user.email,
+        first_name: user.given_name,
+        last_name: user.family_name,
+        verified_email: user.verified_email,
+        send_email_invite: false,
+      });
+    } catch (shopifyErr) {
+      console.error('Shopify OAuth sync warning:', shopifyErr);
     }
 
     // Build redirect URL with success indicator

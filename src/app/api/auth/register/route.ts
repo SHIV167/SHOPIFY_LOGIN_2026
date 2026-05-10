@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { createEmailVerificationToken, buildVerificationUrl } from '@/lib/tokens';
 import { sendEmail } from '@/lib/email';
+import { createShopifyCustomer } from '@/lib/shopify-api';
 
 const registerSchema = z.object({
   shopDomain: z.string().min(1),
@@ -56,6 +57,21 @@ export async function POST(req: NextRequest) {
         phone,
       },
     });
+
+    // Sync customer to Shopify
+    try {
+      await createShopifyCustomer(shop.shopifyDomain, shop.accessToken, {
+        email,
+        first_name: firstName,
+        last_name: lastName,
+        phone,
+        verified_email: false,
+        send_email_invite: false,
+      });
+    } catch (shopifyErr) {
+      console.error('Shopify sync warning:', shopifyErr);
+      // Don't fail registration if Shopify sync fails
+    }
 
     // Check if email verification is required
     const settings = await prisma.loginRegisterSettings.findUnique({

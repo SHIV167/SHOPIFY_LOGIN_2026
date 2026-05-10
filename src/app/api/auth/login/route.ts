@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
+import { createShopifyCustomer } from '@/lib/shopify-api';
 
 const loginSchema = z.object({
   shopDomain: z.string().min(1),
@@ -60,6 +61,20 @@ export async function POST(req: NextRequest) {
       where: { id: customer.id },
       data: { lastLoginAt: new Date() },
     });
+
+    // Best-effort sync to Shopify (may already exist)
+    try {
+      await createShopifyCustomer(shop.shopifyDomain, shop.accessToken, {
+        email: customer.email,
+        first_name: customer.firstName || undefined,
+        last_name: customer.lastName || undefined,
+        phone: customer.phone || undefined,
+        verified_email: customer.emailVerified,
+        send_email_invite: false,
+      });
+    } catch {
+      // Ignore duplicate or other Shopify errors
+    }
 
     return NextResponse.json({
       success: true,
