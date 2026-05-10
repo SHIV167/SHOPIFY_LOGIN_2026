@@ -30,6 +30,7 @@ model Shop {
 
   // Store Locator relations
   locations     StoreLocation[]
+  sliderImages  SliderImage[]
 
   // Review App relations
   reviews       Review[]
@@ -211,6 +212,25 @@ model StoreLocation {
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([shopId, isActive, sortOrder])
+}
+
+model SliderImage {
+  id              String   @id @default(cuid())
+  shopId          String
+  shop            Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  desktopImageUrl String
+  mobileImageUrl  String
+  altText         String?
+  linkUrl         String?
+
+  isActive        Boolean  @default(true)
+  sortOrder       Int      @default(0)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   @@index([shopId, isActive, sortOrder])
 }

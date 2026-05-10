@@ -14,7 +14,9 @@ function EmbedContent() {
   const shop = searchParams.get('shop') || '';
   const oauthSuccess = searchParams.get('oauth_success');
 
-  const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login');
+  const urlMode = searchParams.get('mode') as 'login' | 'register' | 'forgot' | null;
+  const validMode = urlMode && ['login', 'register', 'forgot'].includes(urlMode) ? urlMode : 'login';
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot'>(validMode);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -46,6 +48,26 @@ function EmbedContent() {
       setSuccess('Logged in with Google successfully!');
     }
   }, [oauthSuccess, shop]);
+
+  // Auto-resize iframe and notify parent on login success
+  useEffect(() => {
+    const postResize = () => {
+      const height = document.documentElement.scrollHeight || document.body.scrollHeight;
+      if (window.parent !== window) {
+        window.parent.postMessage({ type: 'lr_resize', height }, '*');
+      }
+    };
+    postResize();
+    const timer = setTimeout(postResize, 300);
+    return () => clearTimeout(timer);
+  }, [mode, error, success, settings]);
+
+  useEffect(() => {
+    if (success && success.includes('Logged in successfully') && window.parent !== window) {
+      const customer = localStorage.getItem('lr_customer');
+      window.parent.postMessage({ type: 'lr_login_success', customer: customer ? JSON.parse(customer) : null }, '*');
+    }
+  }, [success]);
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
