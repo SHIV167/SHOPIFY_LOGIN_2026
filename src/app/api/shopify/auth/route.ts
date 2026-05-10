@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { buildAuthUrl, createState, normalizeShopDomain } from '@/lib/shopify-oauth';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const rawShop = searchParams.get('shop');

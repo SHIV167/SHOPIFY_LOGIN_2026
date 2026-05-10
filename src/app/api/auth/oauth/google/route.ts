@@ -3,6 +3,8 @@ import { cookies } from 'next/headers';
 import { randomToken } from '@/lib/crypto';
 import { signHmacSha256Hex } from '@/lib/hmac';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
