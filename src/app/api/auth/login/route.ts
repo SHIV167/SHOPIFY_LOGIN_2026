@@ -70,10 +70,11 @@ export async function POST(req: NextRequest) {
         last_name: customer.lastName || undefined,
         phone: customer.phone || undefined,
         verified_email: customer.emailVerified,
-        send_email_invite: false,
+        send_email_welcome: false,
       });
-    } catch {
-      // Ignore duplicate or other Shopify errors
+    } catch (e) {
+      // Ignore duplicate or other Shopify errors but log for diagnosis
+      console.warn('[login] Shopify sync skipped:', (e as Error).message);
     }
 
     return NextResponse.json({

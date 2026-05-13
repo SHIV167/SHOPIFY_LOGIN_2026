@@ -25,9 +25,20 @@
     var iframe = document.getElementById('lr-iframe');
     var baseUrl = '{{ app_host }}/embed?shop={{ shop.permanent_domain | url_encode }}';
 
+    function getStoredCustomer() {
+      try {
+        var raw = localStorage.getItem('lr_customer');
+        return raw ? JSON.parse(raw) : null;
+      } catch (e) { return null; }
+    }
+
     window.lrOpenModal = function(mode) {
       var url = baseUrl;
       if (mode) url += '&mode=' + encodeURIComponent(mode);
+      if (mode === 'profile') {
+        var c = getStoredCustomer();
+        if (c) url += '&customer=' + encodeURIComponent(JSON.stringify(c));
+      }
       iframe.src = url;
       overlay.style.display = 'flex';
       document.body.style.overflow = 'hidden';
@@ -49,7 +60,7 @@
       if (e.key === 'Escape' && overlay.style.display === 'flex') lrCloseModal();
     });
 
-    // Message from iframe for auto-resize and login success
+    // Message from iframe for auto-resize, login success, logout, profile
     window.addEventListener('message', function(e) {
       if (e.origin !== '{{ app_host }}') return;
       if (e.data && e.data.type === 'lr_login_success' && e.data.customer) {
@@ -57,6 +68,17 @@
         lrCloseModal();
         // Optionally reload to reflect logged-in state
         window.location.reload();
+      }
+      if (e.data && e.data.type === 'lr_logout') {
+        localStorage.removeItem('lr_customer');
+        lrCloseModal();
+        window.location.reload();
+      }
+      if (e.data && e.data.type === 'lr_request_customer') {
+        var c = getStoredCustomer();
+        if (iframe && iframe.contentWindow) {
+          iframe.contentWindow.postMessage({ type: 'lr_customer_data', customer: c }, '{{ app_host }}');
+        }
       }
       if (e.data && e.data.type === 'lr_resize' && e.data.height) {
         iframe.style.height = e.data.height + 'px';

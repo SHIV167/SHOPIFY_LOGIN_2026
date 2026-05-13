@@ -14,9 +14,10 @@ function EmbedContent() {
   const shop = searchParams.get('shop') || '';
   const oauthSuccess = searchParams.get('oauth_success');
 
-  const urlMode = searchParams.get('mode') as 'login' | 'register' | 'forgot' | null;
-  const validMode = urlMode && ['login', 'register', 'forgot'].includes(urlMode) ? urlMode : 'login';
-  const [mode, setMode] = useState<'login' | 'register' | 'forgot' | 'customers'>(validMode);
+  const urlMode = searchParams.get('mode') as 'login' | 'register' | 'forgot' | 'profile' | null;
+  const validMode = urlMode && ['login', 'register', 'forgot', 'profile'].includes(urlMode) ? urlMode : 'login';
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot' | 'customers' | 'profile'>(validMode);
+  const [profile, setProfile] = useState<any>(null);
   const isAdmin = !!(searchParams.get('host') || searchParams.get('embedded'));
   const [customers, setCustomers] = useState<any[]>([]);
   const [email, setEmail] = useState('');
@@ -121,14 +122,22 @@ function EmbedContent() {
       if (!res.ok) {
         setError(data.error || 'Registration failed');
       } else if (data.requiresVerification) {
-        setSuccess(data.message || 'Please check your email to verify your account.');
+        let msg = data.message || 'Please check your email to verify your account.';
+        if (data.shopifySync && data.shopifySync.ok === false) {
+          msg += ` (Shopify sync warning: ${data.shopifySync.reason || 'failed'})`;
+        }
+        setSuccess(msg);
         setEmail('');
         setPassword('');
         setFirstName('');
         setLastName('');
         setPhone('');
       } else {
-        setSuccess('Registered successfully!');
+        let msg = 'Registered successfully!';
+        if (data.shopifySync && data.shopifySync.ok === false) {
+          msg += ` Note: Shopify customer sync failed (${data.shopifySync.reason || 'unknown error'}).`;
+        }
+        setSuccess(msg);
         setEmail('');
         setPassword('');
         setFirstName('');
@@ -141,6 +150,40 @@ function EmbedContent() {
       setLoading(false);
     }
   };
+
+  const handleLogout = async () => {
+    setLoading(true);
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' }).catch(() => null);
+    } finally {
+      setLoading(false);
+      if (window.parent !== window) {
+        window.parent.postMessage({ type: 'lr_logout' }, '*');
+      }
+    }
+  };
+
+  // Load profile from query if in profile mode
+  useEffect(() => {
+    if (mode !== 'profile') return;
+    const raw = searchParams.get('customer');
+    if (raw) {
+      try { setProfile(JSON.parse(decodeURIComponent(raw))); } catch { /* noop */ }
+    } else if (window.parent !== window) {
+      // Ask parent to send stored customer
+      window.parent.postMessage({ type: 'lr_request_customer' }, '*');
+    }
+  }, [mode, searchParams]);
+
+  useEffect(() => {
+    const onMsg = (e: MessageEvent) => {
+      if (e.data && e.data.type === 'lr_customer_data' && e.data.customer) {
+        setProfile(e.data.customer);
+      }
+    };
+    window.addEventListener('message', onMsg);
+    return () => window.removeEventListener('message', onMsg);
+  }, []);
 
   const handleForgotSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -202,6 +245,33 @@ function EmbedContent() {
     return (
       <div className="w-full max-w-sm mx-auto p-4 text-center">
         <div className="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-gray-900" />
+      </div>
+    );
+  }
+
+  if (mode === 'profile') {
+    return (
+      <div className="w-full max-w-sm mx-auto p-4">
+        <h2 className="text-lg font-semibold mb-3">My Profile</h2>
+        {!profile ? (
+          <p className="text-sm text-gray-500">Loading profile…</p>
+        ) : (
+          <div className="space-y-2 text-sm">
+            <div><span className="text-gray-500">Name:</span> <span className="text-gray-900 font-medium">{[profile.firstName, profile.lastName].filter(Boolean).join(' ') || '—'}</span></div>
+            <div><span className="text-gray-500">Email:</span> <span className="text-gray-900 font-medium">{profile.email || '—'}</span></div>
+            {profile.phone && (<div><span className="text-gray-500">Phone:</span> <span className="text-gray-900 font-medium">{profile.phone}</span></div>)}
+            {typeof profile.emailVerified === 'boolean' && (
+              <div><span className="text-gray-500">Email verified:</span> <span className={`font-medium ${profile.emailVerified ? 'text-green-700' : 'text-yellow-700'}`}>{profile.emailVerified ? 'Yes' : 'No'}</span></div>
+            )}
+            <button
+              onClick={handleLogout}
+              disabled={loading}
+              className="mt-4 w-full rounded bg-gray-900 text-white py-2 text-sm font-medium hover:bg-gray-800 disabled:opacity-50"
+            >
+              {loading ? 'Logging out…' : 'Logout'}
+            </button>
+          </div>
+        )}
       </div>
     );
   }

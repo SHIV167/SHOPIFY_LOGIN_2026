@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { createEmailVerificationToken, buildVerificationUrl } from '@/lib/tokens';
 import { sendEmail } from '@/lib/email';
-import { createShopifyCustomer } from '@/lib/shopify-api';
+import { createShopifyCustomer, findShopifyCustomerByEmail, ShopifyCustomerError } from '@/lib/shopify-api';
 
 const registerSchema = z.object({
   shopDomain: z.string().min(1),
@@ -58,19 +58,37 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Sync customer to Shopify
+    // Sync customer to Shopify (best effort - do not fail registration on sync error)
+    let shopifySync: { ok: boolean; reason?: string; status?: number } = { ok: false };
     try {
-      await createShopifyCustomer(shop.shopifyDomain, shop.accessToken, {
-        email,
-        first_name: firstName,
-        last_name: lastName,
-        phone,
-        verified_email: false,
-        send_email_invite: false,
-      });
+      const existingShopify = await findShopifyCustomerByEmail(
+        shop.shopifyDomain,
+        shop.accessToken,
+        email
+      ).catch(() => null);
+
+      if (existingShopify) {
+        shopifySync = { ok: true, reason: 'already_exists' };
+      } else {
+        await createShopifyCustomer(shop.shopifyDomain, shop.accessToken, {
+          email,
+          first_name: firstName,
+          last_name: lastName,
+          phone,
+          verified_email: false,
+          send_email_welcome: false,
+        });
+        shopifySync = { ok: true };
+      }
     } catch (shopifyErr) {
-      console.error('Shopify sync warning:', shopifyErr);
-      // Don't fail registration if Shopify sync fails
+      const status = shopifyErr instanceof ShopifyCustomerError ? shopifyErr.status : undefined;
+      const body = shopifyErr instanceof ShopifyCustomerError ? shopifyErr.body : String(shopifyErr);
+      console.error('[register] Shopify sync failed for', email, { status, body });
+      let reason = body;
+      if (status === 401 || status === 403) {
+        reason = 'Missing write_customers scope or invalid access token. Reinstall the app with write_customers scope.';
+      }
+      shopifySync = { ok: false, status, reason };
     }
 
     // Check if email verification is required
@@ -99,6 +117,7 @@ export async function POST(req: NextRequest) {
         success: true,
         requiresVerification: true,
         message: 'Registration successful. Please check your email to verify your account.',
+        shopifySync,
         customer: {
           id: customer.id,
           email: customer.email,
@@ -110,6 +129,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
+      shopifySync,
       customer: {
         id: customer.id,
         email: customer.email,
