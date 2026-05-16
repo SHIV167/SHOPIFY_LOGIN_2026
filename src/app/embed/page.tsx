@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 interface ShopSettings {
   enableRegistration: boolean;
   enableSocialLogin: boolean;
+  enablePhoneLogin: boolean;
   requireEmailVerification: boolean;
 }
 
@@ -16,7 +17,7 @@ function EmbedContent() {
 
   const urlMode = searchParams.get('mode') as 'login' | 'register' | 'forgot' | 'profile' | null;
   const validMode = urlMode && ['login', 'register', 'forgot', 'profile'].includes(urlMode) ? urlMode : 'login';
-  const [mode, setMode] = useState<'login' | 'register' | 'forgot' | 'customers' | 'profile'>(validMode);
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot' | 'customers' | 'profile' | 'phone'>(validMode);
   const [profile, setProfile] = useState<any>(null);
   const isAdmin = !!(searchParams.get('host') || searchParams.get('embedded'));
   const [customers, setCustomers] = useState<any[]>([]);
@@ -25,6 +26,9 @@ function EmbedContent() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [phone, setPhone] = useState('');
+  const [otp, setOtp] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpStep, setOtpStep] = useState<'phone' | 'otp' | 'details'>('phone');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
@@ -237,6 +241,75 @@ function EmbedContent() {
     }
   };
 
+  const handleSendOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+    setLoading(true);
+
+    try {
+      const res = await fetch('/api/auth/phone/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shopDomain: shop, phone }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Failed to send OTP');
+      } else {
+        setSuccess(data.message || 'OTP sent');
+        setOtpSent(true);
+        setOtpStep('otp');
+        if (data.devOtp) {
+          console.log('[dev] OTP:', data.devOtp);
+          setSuccess(`OTP sent. Dev OTP: ${data.devOtp}`);
+        }
+      }
+    } catch {
+      setError('Network error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+    setLoading(true);
+
+    try {
+      const res = await fetch('/api/auth/phone/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          shopDomain: shop,
+          phone,
+          otp,
+          firstName,
+          lastName,
+          email,
+        }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Invalid OTP');
+      } else {
+        setSuccess('Logged in successfully!');
+        localStorage.setItem('lr_customer', JSON.stringify(data.customer));
+        setOtpStep('phone');
+        setOtp('');
+        setOtpSent(false);
+      }
+    } catch {
+      setError('Network error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const googleLoginUrl = `/api/auth/oauth/google?shop=${encodeURIComponent(shop)}&redirectTo=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}`;
 
   const showSocial = settings?.enableSocialLogin;
@@ -279,7 +352,7 @@ function EmbedContent() {
   return (
     <div className="w-full max-w-sm mx-auto p-4">
       {/* Mode tabs */}
-      <div className="flex gap-2 mb-4">
+      <div className="flex gap-2 mb-4 flex-wrap">
         <button
           onClick={() => { setMode('login'); setError(''); setSuccess(''); setNeedsVerification(false); }}
           className={`flex-1 py-2 text-sm font-medium rounded ${
@@ -288,6 +361,16 @@ function EmbedContent() {
         >
           Login
         </button>
+        {settings?.enablePhoneLogin && (
+          <button
+            onClick={() => { setMode('phone'); setError(''); setSuccess(''); setOtpStep('phone'); setOtp(''); setOtpSent(false); }}
+            className={`flex-1 py-2 text-sm font-medium rounded ${
+              mode === 'phone' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700'
+            }`}
+          >
+            Phone
+          </button>
+        )}
         {settings?.enableRegistration !== false && (
           <button
             onClick={() => { setMode('register'); setError(''); setSuccess(''); setNeedsVerification(false); }}
@@ -402,6 +485,77 @@ function EmbedContent() {
             {loading ? 'Please wait...' : 'Login'}
           </button>
         </form>
+      )}
+
+      {/* Phone login form */}
+      {mode === 'phone' && (
+        <div className="space-y-3">
+          {otpStep === 'phone' && (
+            <form onSubmit={handleSendOtp} className="space-y-3">
+              <p className="text-sm text-gray-600">
+                Enter your phone number and we will send you a verification code.
+              </p>
+              <input
+                type="tel"
+                placeholder="Phone number"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                required
+                className="w-full rounded border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:ring-gray-500"
+              />
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full rounded bg-gray-900 text-white py-2 text-sm font-medium hover:bg-gray-800 disabled:opacity-50"
+              >
+                {loading ? 'Sending...' : 'Send OTP'}
+              </button>
+            </form>
+          )}
+
+          {otpStep === 'otp' && (
+            <form onSubmit={handleVerifyOtp} className="space-y-3">
+              <p className="text-sm text-gray-600">
+                Enter the 6-digit code sent to {phone}.
+              </p>
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                placeholder="6-digit OTP"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                required
+                className="w-full rounded border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:ring-gray-500 tracking-widest text-center text-lg"
+              />
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  disabled={loading}
+                  onClick={() => { setOtpStep('phone'); setOtp(''); setError(''); setSuccess(''); }}
+                  className="rounded bg-gray-100 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50"
+                >
+                  Back
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="rounded bg-gray-900 text-white py-2 text-sm font-medium hover:bg-gray-800 disabled:opacity-50"
+                >
+                  {loading ? 'Verifying...' : 'Verify'}
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={handleSendOtp}
+                disabled={loading}
+                className="w-full text-xs text-gray-500 hover:text-gray-800 underline"
+              >
+                Resend OTP
+              </button>
+            </form>
+          )}
+        </div>
       )}
 
       {/* Register form */}

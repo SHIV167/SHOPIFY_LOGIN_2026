@@ -94,3 +94,64 @@ export async function findShopifyCustomerByEmail(
   const data = (await res.json()) as { customers: Array<{ id: number; email: string }> };
   return data.customers?.[0] ?? null;
 }
+
+/**
+ * Create a customer access token via Storefront API (for non-Plus checkout sync)
+ * Requires a Storefront access token (different from Admin token)
+ */
+export async function createStorefrontCustomerAccessToken(
+  shopDomain: string,
+  email: string,
+  password: string
+): Promise<string> {
+  const storefrontToken = process.env.SHOPIFY_STOREFRONT_TOKEN || '';
+  const apiVersion = process.env.SHOPIFY_API_VERSION || '2024-01';
+  const url = `https://${shopDomain}/api/${apiVersion}/graphql.json`;
+
+  const query = `
+    mutation customerAccessTokenCreate($input: CustomerAccessTokenCreateInput!) {
+      customerAccessTokenCreate(input: $input) {
+        customerAccessToken {
+          accessToken
+          expiresAt
+        }
+        customerUserErrors {
+          code
+          field
+          message
+        }
+      }
+    }
+  `;
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Shopify-Storefront-Access-Token': storefrontToken,
+    },
+    body: JSON.stringify({
+      query,
+      variables: {
+        input: { email, password },
+      },
+    }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Storefront token creation failed: ${res.status} ${text}`);
+  }
+
+  const data = (await res.json()) as any;
+  const token = data?.data?.customerAccessTokenCreate?.customerAccessToken?.accessToken;
+  const errors = data?.data?.customerAccessTokenCreate?.customerUserErrors || [];
+
+  if (!token) {
+    throw new Error(
+      `Storefront token creation failed: ${errors.map((e: any) => e.message).join(', ') || 'unknown error'}`
+    );
+  }
+
+  return token;
+}

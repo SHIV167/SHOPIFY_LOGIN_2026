@@ -77,6 +77,15 @@ function AdminContent() {
                     <label className="flex items-center gap-3">
                       <input
                         type="checkbox"
+                        checked={settings.enablePhoneLogin}
+                        onChange={() => toggleSetting('enablePhoneLogin')}
+                        className="rounded"
+                      />
+                      <span className="text-sm text-gray-700">Enable Phone Login (OTP)</span>
+                    </label>
+                    <label className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
                         checked={settings.requireEmailVerification}
                         onChange={() => toggleSetting('requireEmailVerification')}
                         className="rounded"

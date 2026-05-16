@@ -18,17 +18,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Shop not found' }, { status: 404 });
     }
 
-    const settings = await prisma.loginRegisterSettings.upsert({
+    const settings = await (prisma.loginRegisterSettings.upsert as any)({
       where: { shopId: existingShop.id },
       update: {
         enableRegistration: updates.enableRegistration,
         enableSocialLogin: updates.enableSocialLogin,
+        enablePhoneLogin: updates.enablePhoneLogin,
         requireEmailVerification: updates.requireEmailVerification,
       },
       create: {
         shopId: existingShop.id,
         enableRegistration: updates.enableRegistration ?? true,
         enableSocialLogin: updates.enableSocialLogin ?? false,
+        enablePhoneLogin: updates.enablePhoneLogin ?? false,
         requireEmailVerification: updates.requireEmailVerification ?? false,
       },
     });

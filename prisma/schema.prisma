@@ -114,6 +114,11 @@ model Customer {
   emailVerifyToken String?
   emailVerifyExpires DateTime?
 
+  // Phone OTP
+  phoneVerified Boolean   @default(false)
+  phoneOtp      String?
+  phoneOtpExpires DateTime?
+
   // Status
   isActive      Boolean   @default(true)
   lastLoginAt   DateTime?
@@ -126,6 +131,10 @@ model Customer {
   provider      String?
   providerId    String?
 
+  // Shopify integration (non-Plus stores use Storefront API tokens)
+  shopifyCustomerId String?
+  shopifyCustomerToken String?
+
   // Metadata
   tags          String[]
   notes         String?   @db.Text
@@ -134,7 +143,9 @@ model Customer {
   updatedAt     DateTime  @updatedAt
 
   @@unique([shopId, email])
+  @@unique([shopId, phone])
   @@index([shopId, email])
+  @@index([shopId, phone])
   @@index([shopId, isActive])
   @@index([emailVerified])
 }
