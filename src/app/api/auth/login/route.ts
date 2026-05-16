@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
-import { createShopifyCustomer } from '@/lib/shopify-api';
+import { createShopifyCustomer, findShopifyCustomerByEmail, ShopifyCustomerError } from '@/lib/shopify-api';
 
 const loginSchema = z.object({
   shopDomain: z.string().min(1),
@@ -62,18 +62,34 @@ export async function POST(req: NextRequest) {
       data: { lastLoginAt: new Date() },
     });
 
-    // Best-effort sync to Shopify (may already exist)
+    // Best-effort sync to Shopify
     try {
-      await createShopifyCustomer(shop.shopifyDomain, shop.accessToken, {
-        email: customer.email,
-        first_name: customer.firstName || undefined,
-        last_name: customer.lastName || undefined,
-        phone: customer.phone || undefined,
-        verified_email: customer.emailVerified,
-        send_email_welcome: false,
-      });
+      const existingShopify = await findShopifyCustomerByEmail(
+        shop.shopifyDomain, shop.accessToken, customer.email
+      ).catch(() => null);
+
+      if (existingShopify) {
+        if (!customer.shopifyCustomerId) {
+          await prisma.customer.update({
+            where: { id: customer.id },
+            data: { shopifyCustomerId: String(existingShopify.id) },
+          });
+        }
+      } else {
+        const created = await createShopifyCustomer(shop.shopifyDomain, shop.accessToken, {
+          email: customer.email,
+          first_name: customer.firstName || undefined,
+          last_name: customer.lastName || undefined,
+          phone: customer.phone || undefined,
+          verified_email: customer.emailVerified,
+          send_email_welcome: false,
+        });
+        await prisma.customer.update({
+          where: { id: customer.id },
+          data: { shopifyCustomerId: String(created.id) },
+        });
+      }
     } catch (e) {
-      // Ignore duplicate or other Shopify errors but log for diagnosis
       console.warn('[login] Shopify sync skipped:', (e as Error).message);
     }
 

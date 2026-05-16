@@ -60,6 +60,7 @@ export async function POST(req: NextRequest) {
 
     // Sync customer to Shopify (best effort - do not fail registration on sync error)
     let shopifySync: { ok: boolean; reason?: string; status?: number } = { ok: false };
+    let shopifyCustomerId: number | null = null;
     try {
       const existingShopify = await findShopifyCustomerByEmail(
         shop.shopifyDomain,
@@ -68,9 +69,10 @@ export async function POST(req: NextRequest) {
       ).catch(() => null);
 
       if (existingShopify) {
+        shopifyCustomerId = existingShopify.id;
         shopifySync = { ok: true, reason: 'already_exists' };
       } else {
-        await createShopifyCustomer(shop.shopifyDomain, shop.accessToken, {
+        const created = await createShopifyCustomer(shop.shopifyDomain, shop.accessToken, {
           email,
           first_name: firstName,
           last_name: lastName,
@@ -78,7 +80,16 @@ export async function POST(req: NextRequest) {
           verified_email: false,
           send_email_welcome: false,
         });
+        shopifyCustomerId = created.id;
         shopifySync = { ok: true };
+      }
+
+      // Store Shopify customer ID for future updates
+      if (shopifyCustomerId) {
+        await prisma.customer.update({
+          where: { id: customer.id },
+          data: { shopifyCustomerId: String(shopifyCustomerId) },
+        });
       }
     } catch (shopifyErr) {
       const status = shopifyErr instanceof ShopifyCustomerError ? shopifyErr.status : undefined;

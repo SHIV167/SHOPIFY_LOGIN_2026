@@ -95,6 +95,82 @@ export async function findShopifyCustomerByEmail(
   return data.customers?.[0] ?? null;
 }
 
+export async function updateShopifyCustomer(
+  shopDomain: string,
+  accessToken: string,
+  shopifyCustomerId: number,
+  payload: ShopifyCustomerPayload
+) {
+  const apiVersion = process.env.SHOPIFY_API_VERSION || '2024-01';
+  const url = `https://${shopDomain}/admin/api/${apiVersion}/customers/${shopifyCustomerId}.json`;
+
+  const cleaned: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(payload)) {
+    if (v === undefined || v === null) continue;
+    if (typeof v === 'string' && v.trim() === '') continue;
+    cleaned[k] = v;
+  }
+
+  const res = await fetch(url, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Shopify-Access-Token': accessToken,
+    },
+    body: JSON.stringify({ customer: cleaned }),
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    console.error('[Shopify] customer update failed', {
+      shopDomain,
+      shopifyCustomerId,
+      status: res.status,
+      body: text,
+    });
+    throw new ShopifyCustomerError(res.status, text);
+  }
+
+  const data = (await res.json()) as {
+    customer: {
+      id: number;
+      email: string;
+      first_name: string | null;
+      last_name: string | null;
+    };
+  };
+  return data.customer;
+}
+
+export async function deleteShopifyCustomer(
+  shopDomain: string,
+  accessToken: string,
+  shopifyCustomerId: number
+) {
+  const apiVersion = process.env.SHOPIFY_API_VERSION || '2024-01';
+  const url = `https://${shopDomain}/admin/api/${apiVersion}/customers/${shopifyCustomerId}.json`;
+
+  const res = await fetch(url, {
+    method: 'DELETE',
+    headers: {
+      'X-Shopify-Access-Token': accessToken,
+    },
+  });
+
+  if (!res.ok && res.status !== 404) {
+    const text = await res.text();
+    console.error('[Shopify] customer delete failed', {
+      shopDomain,
+      shopifyCustomerId,
+      status: res.status,
+      body: text,
+    });
+    throw new ShopifyCustomerError(res.status, text);
+  }
+
+  return true;
+}
+
 /**
  * Create a customer access token via Storefront API (for non-Plus checkout sync)
  * Requires a Storefront access token (different from Admin token)
