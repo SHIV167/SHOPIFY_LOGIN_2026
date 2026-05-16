@@ -36,6 +36,10 @@ function EmbedContent() {
   const [settingsLoading, setSettingsLoading] = useState(true);
   const [needsVerification, setNeedsVerification] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState('');
+  const [profileEdit, setProfileEdit] = useState<any>(null);
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileError, setProfileError] = useState('');
+  const [profileSuccess, setProfileSuccess] = useState('');
 
   // Fetch shop settings and customers
   useEffect(() => {
@@ -68,7 +72,7 @@ function EmbedContent() {
     postResize();
     const timer = setTimeout(postResize, 300);
     return () => clearTimeout(timer);
-  }, [mode, error, success, settings, customers]);
+  }, [mode, error, success, settings, customers, profileEdit]);
 
   useEffect(() => {
     if (success && success.includes('Logged in successfully') && window.parent !== window) {
@@ -164,6 +168,45 @@ function EmbedContent() {
       if (window.parent !== window) {
         window.parent.postMessage({ type: 'lr_logout' }, '*');
       }
+    }
+  };
+
+  const startProfileEdit = () => {
+    setProfileEdit({ ...profile });
+    setProfileError('');
+    setProfileSuccess('');
+  };
+
+  const cancelProfileEdit = () => {
+    setProfileEdit(null);
+    setProfileError('');
+    setProfileSuccess('');
+  };
+
+  const handleProfileUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setProfileError('');
+    setProfileSuccess('');
+    setProfileSaving(true);
+    try {
+      const res = await fetch('/api/customers', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: profile.id, shopDomain: shop, ...profileEdit }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setProfileError(data.error || 'Update failed');
+      } else {
+        setProfile(data.customer);
+        localStorage.setItem('lr_customer', JSON.stringify(data.customer));
+        setProfileSuccess('Profile updated successfully!');
+        setProfileEdit(null);
+      }
+    } catch {
+      setProfileError('Network error');
+    } finally {
+      setProfileSaving(false);
     }
   };
 
@@ -323,26 +366,235 @@ function EmbedContent() {
   }
 
   if (mode === 'profile') {
+    const initials = profile
+      ? [profile.firstName, profile.lastName]
+          .filter(Boolean)
+          .map((n: string) => n[0])
+          .join('')
+          .toUpperCase() || profile.email?.[0]?.toUpperCase() || '?'
+      : '?';
+
+    const formatDate = (d: string | null) => {
+      if (!d) return '—';
+      return new Date(d).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    };
+
+    const InfoRow = ({ label, value, children }: { label: string; value?: string; children?: React.ReactNode }) => (
+      <div className="flex justify-between items-start py-2 border-b border-gray-100 last:border-0">
+        <span className="text-gray-500 text-sm">{label}</span>
+        {children || <span className="text-gray-900 text-sm font-medium text-right">{value || '—'}</span>}
+      </div>
+    );
+
     return (
-      <div className="w-full max-w-sm mx-auto p-4">
-        <h2 className="text-lg font-semibold mb-3">My Profile</h2>
+      <div className="w-full max-w-md mx-auto p-4">
         {!profile ? (
-          <p className="text-sm text-gray-500">Loading profile…</p>
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-6 w-6 border-2 border-gray-300 border-t-gray-900" />
+            <p className="ml-3 text-sm text-gray-500">Loading profile…</p>
+          </div>
         ) : (
-          <div className="space-y-2 text-sm">
-            <div><span className="text-gray-500">Name:</span> <span className="text-gray-900 font-medium">{[profile.firstName, profile.lastName].filter(Boolean).join(' ') || '—'}</span></div>
-            <div><span className="text-gray-500">Email:</span> <span className="text-gray-900 font-medium">{profile.email || '—'}</span></div>
-            {profile.phone && (<div><span className="text-gray-500">Phone:</span> <span className="text-gray-900 font-medium">{profile.phone}</span></div>)}
-            {typeof profile.emailVerified === 'boolean' && (
-              <div><span className="text-gray-500">Email verified:</span> <span className={`font-medium ${profile.emailVerified ? 'text-green-700' : 'text-yellow-700'}`}>{profile.emailVerified ? 'Yes' : 'No'}</span></div>
+          <div className="space-y-4">
+            {/* Header / Avatar */}
+            <div className="flex items-center gap-4">
+              <div className="flex-shrink-0 w-16 h-16 rounded-full bg-gray-900 text-white flex items-center justify-center text-xl font-semibold overflow-hidden">
+                {profile.avatarUrl ? (
+                  <img src={profile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                ) : (
+                  initials
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg font-semibold text-gray-900 truncate">
+                  {[profile.firstName, profile.lastName].filter(Boolean).join(' ') || 'My Account'}
+                </h2>
+                <p className="text-sm text-gray-500 truncate">{profile.email}</p>
+                <div className="flex flex-wrap gap-1.5 mt-1.5">
+                  {profile.emailVerified ? (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700">
+                      <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                      Email Verified
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-50 text-yellow-700">Email Unverified</span>
+                  )}
+                  {profile.phoneVerified && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700">
+                      <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                      Phone Verified
+                    </span>
+                  )}
+                  {profile.provider && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 capitalize">{profile.provider}</span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Alerts */}
+            {profileError && <div className="rounded bg-red-50 px-3 py-2 text-sm text-red-700">{profileError}</div>}
+            {profileSuccess && <div className="rounded bg-green-50 px-3 py-2 text-sm text-green-700">{profileSuccess}</div>}
+
+            {/* Edit Form */}
+            {profileEdit ? (
+              <form onSubmit={handleProfileUpdate} className="space-y-4">
+                <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-3">
+                  <h3 className="text-sm font-semibold text-gray-900">Edit Profile</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">First Name</label>
+                      <input
+                        type="text"
+                        value={profileEdit.firstName || ''}
+                        onChange={(e) => setProfileEdit({ ...profileEdit, firstName: e.target.value })}
+                        className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Last Name</label>
+                      <input
+                        type="text"
+                        value={profileEdit.lastName || ''}
+                        onChange={(e) => setProfileEdit({ ...profileEdit, lastName: e.target.value })}
+                        className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Phone</label>
+                    <input
+                      type="tel"
+                      value={profileEdit.phone || ''}
+                      onChange={(e) => setProfileEdit({ ...profileEdit, phone: e.target.value })}
+                      className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Address</label>
+                    <input
+                      type="text"
+                      value={profileEdit.address || ''}
+                      onChange={(e) => setProfileEdit({ ...profileEdit, address: e.target.value })}
+                      className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">City</label>
+                      <input
+                        type="text"
+                        value={profileEdit.city || ''}
+                        onChange={(e) => setProfileEdit({ ...profileEdit, city: e.target.value })}
+                        className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">State</label>
+                      <input
+                        type="text"
+                        value={profileEdit.state || ''}
+                        onChange={(e) => setProfileEdit({ ...profileEdit, state: e.target.value })}
+                        className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">ZIP Code</label>
+                      <input
+                        type="text"
+                        value={profileEdit.zipCode || ''}
+                        onChange={(e) => setProfileEdit({ ...profileEdit, zipCode: e.target.value })}
+                        className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Country</label>
+                      <input
+                        type="text"
+                        value={profileEdit.country || ''}
+                        onChange={(e) => setProfileEdit({ ...profileEdit, country: e.target.value })}
+                        className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    type="submit"
+                    disabled={profileSaving}
+                    className="flex-1 rounded bg-gray-900 text-white py-2.5 text-sm font-medium hover:bg-gray-800 disabled:opacity-50"
+                  >
+                    {profileSaving ? 'Saving…' : 'Save Changes'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={cancelProfileEdit}
+                    disabled={profileSaving}
+                    className="flex-1 rounded bg-gray-100 text-gray-700 py-2.5 text-sm font-medium hover:bg-gray-200 disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <>
+                {/* Personal Info Card */}
+                <div className="bg-white rounded-lg border border-gray-200 p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-sm font-semibold text-gray-900">Personal Information</h3>
+                    <button
+                      onClick={startProfileEdit}
+                      className="text-xs font-medium text-gray-700 hover:text-gray-900 underline"
+                    >
+                      Edit
+                    </button>
+                  </div>
+                  <InfoRow label="Full Name" value={[profile.firstName, profile.lastName].filter(Boolean).join(' ')} />
+                  <InfoRow label="Email" value={profile.email} />
+                  <InfoRow label="Phone" value={profile.phone} />
+                </div>
+
+                {/* Address Card */}
+                <div className="bg-white rounded-lg border border-gray-200 p-4">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3">Address</h3>
+                  <InfoRow label="Street" value={profile.address} />
+                  <InfoRow label="City" value={profile.city} />
+                  <InfoRow label="State" value={profile.state} />
+                  <InfoRow label="ZIP Code" value={profile.zipCode} />
+                  <InfoRow label="Country" value={profile.country} />
+                </div>
+
+                {/* Account Info Card */}
+                <div className="bg-white rounded-lg border border-gray-200 p-4">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3">Account</h3>
+                  <InfoRow label="Member Since" value={formatDate(profile.createdAt)} />
+                  <InfoRow label="Last Login" value={formatDate(profile.lastLoginAt)} />
+                  <InfoRow label="Account Status" value={profile.isActive ? 'Active' : 'Inactive'} />
+                  {profile.shopifyCustomerId && <InfoRow label="Shopify ID" value={String(profile.shopifyCustomerId)} />}
+                  <InfoRow label="Login Method">
+                    <span className="text-sm font-medium text-gray-900 capitalize">{profile.provider || 'Email & Password'}</span>
+                  </InfoRow>
+                </div>
+
+                {/* Actions */}
+                <div className="flex gap-2 pt-2">
+                  <button
+                    onClick={startProfileEdit}
+                    className="flex-1 rounded bg-gray-900 text-white py-2.5 text-sm font-medium hover:bg-gray-800"
+                  >
+                    Edit Profile
+                  </button>
+                  <button
+                    onClick={handleLogout}
+                    disabled={loading}
+                    className="flex-1 rounded bg-gray-100 text-gray-700 py-2.5 text-sm font-medium hover:bg-gray-200 disabled:opacity-50"
+                  >
+                    {loading ? 'Logging out…' : 'Logout'}
+                  </button>
+                </div>
+              </>
             )}
-            <button
-              onClick={handleLogout}
-              disabled={loading}
-              className="mt-4 w-full rounded bg-gray-900 text-white py-2 text-sm font-medium hover:bg-gray-800 disabled:opacity-50"
-            >
-              {loading ? 'Logging out…' : 'Logout'}
-            </button>
           </div>
         )}
       </div>
