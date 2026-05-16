@@ -92,12 +92,10 @@ export async function POST(req: NextRequest) {
         zipCode: customer.zipCode,
         country: customer.country,
         emailVerified: customer.emailVerified,
-        phoneVerified: customer.phoneVerified,
         isActive: customer.isActive,
         lastLoginAt: customer.lastLoginAt,
         createdAt: customer.createdAt,
         provider: customer.provider,
-        shopifyCustomerId: customer.shopifyCustomerId,
       },
     });
   } catch (err) {

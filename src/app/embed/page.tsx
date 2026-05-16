@@ -40,6 +40,15 @@ function EmbedContent() {
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileError, setProfileError] = useState('');
   const [profileSuccess, setProfileSuccess] = useState('');
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordSaving, setPasswordSaving] = useState(false);
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // Fetch shop settings and customers
   useEffect(() => {
@@ -207,6 +216,68 @@ function EmbedContent() {
       setProfileError('Network error');
     } finally {
       setProfileSaving(false);
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError('');
+    setPasswordSuccess('');
+    if (newPassword !== confirmPassword) {
+      setPasswordError('Passwords do not match');
+      return;
+    }
+    if (newPassword.length < 6) {
+      setPasswordError('Password must be at least 6 characters');
+      return;
+    }
+    setPasswordSaving(true);
+    try {
+      const res = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shopDomain: shop, customerId: profile.id, currentPassword, newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setPasswordError(data.error || 'Failed to change password');
+      } else {
+        setPasswordSuccess('Password changed successfully!');
+        setCurrentPassword('');
+        setNewPassword('');
+        setConfirmPassword('');
+        setTimeout(() => setShowChangePassword(false), 1500);
+      }
+    } catch {
+      setPasswordError('Network error');
+    } finally {
+      setPasswordSaving(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleteLoading(true);
+    try {
+      const res = await fetch('/api/customers', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: profile.id, shopDomain: shop }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setProfileError(data.error || 'Failed to delete account');
+      } else {
+        localStorage.removeItem('lr_customer');
+        setProfile(null);
+        if (window.parent !== window) {
+          window.parent.postMessage({ type: 'lr_logout' }, '*');
+        }
+      }
+    } catch {
+      setProfileError('Network error');
+    } finally {
+      setDeleteLoading(false);
+      setShowDeleteConfirm(false);
     }
   };
 
@@ -418,12 +489,6 @@ function EmbedContent() {
                   ) : (
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-50 text-yellow-700">Email Unverified</span>
                   )}
-                  {profile.phoneVerified && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700">
-                      <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
-                      Phone Verified
-                    </span>
-                  )}
                   {profile.provider && (
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 capitalize">{profile.provider}</span>
                   )}
@@ -571,10 +636,109 @@ function EmbedContent() {
                   <InfoRow label="Member Since" value={formatDate(profile.createdAt)} />
                   <InfoRow label="Last Login" value={formatDate(profile.lastLoginAt)} />
                   <InfoRow label="Account Status" value={profile.isActive ? 'Active' : 'Inactive'} />
-                  {profile.shopifyCustomerId && <InfoRow label="Shopify ID" value={String(profile.shopifyCustomerId)} />}
                   <InfoRow label="Login Method">
                     <span className="text-sm font-medium text-gray-900 capitalize">{profile.provider || 'Email & Password'}</span>
                   </InfoRow>
+                </div>
+
+                {/* Security Card */}
+                <div className="bg-white rounded-lg border border-gray-200 p-4">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3">Security</h3>
+                  {!showChangePassword ? (
+                    <button
+                      onClick={() => { setShowChangePassword(true); setPasswordError(''); setPasswordSuccess(''); }}
+                      className="w-full text-left text-sm text-gray-700 hover:text-gray-900 font-medium py-2 border-b border-gray-100 last:border-0"
+                    >
+                      Change Password →
+                    </button>
+                  ) : (
+                    <form onSubmit={handleChangePassword} className="space-y-3">
+                      {passwordError && <div className="rounded bg-red-50 px-3 py-2 text-sm text-red-700">{passwordError}</div>}
+                      {passwordSuccess && <div className="rounded bg-green-50 px-3 py-2 text-sm text-green-700">{passwordSuccess}</div>}
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Current Password</label>
+                        <input
+                          type="password"
+                          value={currentPassword}
+                          onChange={(e) => setCurrentPassword(e.target.value)}
+                          className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
+                          required
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">New Password</label>
+                        <input
+                          type="password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                          className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
+                          required
+                          minLength={6}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Confirm New Password</label>
+                        <input
+                          type="password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
+                          required
+                          minLength={6}
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="submit"
+                          disabled={passwordSaving}
+                          className="flex-1 rounded bg-gray-900 text-white py-2 text-sm font-medium hover:bg-gray-800 disabled:opacity-50"
+                        >
+                          {passwordSaving ? 'Saving…' : 'Update Password'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowChangePassword(false)}
+                          disabled={passwordSaving}
+                          className="flex-1 rounded bg-gray-100 text-gray-700 py-2 text-sm font-medium hover:bg-gray-200 disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+
+                {/* Danger Zone */}
+                <div className="bg-white rounded-lg border border-red-200 p-4">
+                  <h3 className="text-sm font-semibold text-red-700 mb-3">Danger Zone</h3>
+                  {!showDeleteConfirm ? (
+                    <button
+                      onClick={() => setShowDeleteConfirm(true)}
+                      className="w-full text-left text-sm text-red-600 hover:text-red-800 font-medium py-2"
+                    >
+                      Delete Account →
+                    </button>
+                  ) : (
+                    <div className="space-y-3">
+                      <p className="text-sm text-red-600">Are you sure? This action cannot be undone. All your data will be permanently deleted.</p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleDeleteAccount}
+                          disabled={deleteLoading}
+                          className="flex-1 rounded bg-red-600 text-white py-2 text-sm font-medium hover:bg-red-700 disabled:opacity-50"
+                        >
+                          {deleteLoading ? 'Deleting…' : 'Yes, Delete My Account'}
+                        </button>
+                        <button
+                          onClick={() => setShowDeleteConfirm(false)}
+                          disabled={deleteLoading}
+                          className="flex-1 rounded bg-gray-100 text-gray-700 py-2 text-sm font-medium hover:bg-gray-200 disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Actions */}

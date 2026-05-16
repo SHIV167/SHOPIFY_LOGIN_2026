@@ -101,16 +101,50 @@ export async function PUT(req: NextRequest) {
         zipCode: updated.zipCode,
         country: updated.country,
         emailVerified: updated.emailVerified,
-        phoneVerified: updated.phoneVerified,
         isActive: updated.isActive,
         lastLoginAt: updated.lastLoginAt,
         createdAt: updated.createdAt,
         provider: updated.provider,
-        shopifyCustomerId: updated.shopifyCustomerId,
       },
     });
   } catch (err) {
     console.error('Customer update error:', err);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { id, shopDomain } = body;
+
+    if (!id || !shopDomain) {
+      return NextResponse.json({ error: 'Missing id or shopDomain' }, { status: 400 });
+    }
+
+    const shop = await prisma.shop.findUnique({
+      where: { shopifyDomain: shopDomain },
+    });
+
+    if (!shop) {
+      return NextResponse.json({ error: 'Shop not found' }, { status: 404 });
+    }
+
+    const customer = await prisma.customer.findFirst({
+      where: { id, shopId: shop.id },
+    });
+
+    if (!customer) {
+      return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
+    }
+
+    await prisma.customer.delete({
+      where: { id },
+    });
+
+    return NextResponse.json({ success: true, message: 'Account deleted successfully' });
+  } catch (err) {
+    console.error('Customer delete error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
