@@ -473,7 +473,7 @@
   </script>
 {%- endif -%}
 
-{%- if shop.customer_accounts_enabled -%}
+{%- if shop.customer_accounts_enabled and request.page_type != 'customers/login' -%}
   {% render 'loginregister-embed' %}
 {%- endif -%}
 
