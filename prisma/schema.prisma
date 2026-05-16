@@ -143,7 +143,6 @@ model Customer {
   updatedAt     DateTime  @updatedAt
 
   @@unique([shopId, email])
-  @@unique([shopId, phone])
   @@index([shopId, email])
   @@index([shopId, phone])
   @@index([shopId, isActive])
