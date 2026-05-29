@@ -254,9 +254,18 @@
   <script>
     document.addEventListener('DOMContentLoaded', function() {
       const accountIcon = document.getElementById("account-icon");
+      const isLoggedIn = {% if customer %}true{% else %}false{% endif %};
+      
       accountIcon.addEventListener('click', function(event) {
         event.preventDefault();
-        // Open the app-based login modal
+        
+        // If customer is logged in, redirect to account page
+        if (isLoggedIn) {
+          window.location.href = '/account';
+          return;
+        }
+        
+        // If not logged in, open the app-based login modal
         if (window.lrOpenModal) {
           window.lrOpenModal('login');
         } else {
