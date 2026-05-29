@@ -149,6 +149,8 @@ function EmbedContent() {
         setFirstName('');
         setLastName('');
         setPhone('');
+        // Switch to login mode after registration
+        setMode('login');
       } else {
         let msg = 'Registered successfully!';
         if (data.shopifySync && data.shopifySync.ok === false) {
@@ -160,6 +162,8 @@ function EmbedContent() {
         setFirstName('');
         setLastName('');
         setPhone('');
+        // Switch to login mode after registration
+        setMode('login');
       }
     } catch {
       setError('Network error');
