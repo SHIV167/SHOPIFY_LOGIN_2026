@@ -1,0 +1,1405 @@
+<link rel="stylesheet" href="{{ 'component-list-menu.css' | asset_url }}" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="{{ 'component-search.css' | asset_url }}" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="{{ 'component-menu-drawer.css' | asset_url }}" media="print" onload="this.media='all'">
+<link rel="stylesheet" href="{{ 'component-cart-notification.css' | asset_url }}" media="print" onload="this.media='all'">
+
+{%- if settings.predictive_search_enabled -%}
+  <link rel="stylesheet" href="{{ 'component-price.css' | asset_url }}" media="print" onload="this.media='all'">
+{%- endif -%}
+
+{%- if section.settings.menu_type_desktop == 'mega' -%}
+  <link rel="stylesheet" href="{{ 'component-mega-menu.css' | asset_url }}" media="print" onload="this.media='all'">
+{%- endif -%}
+
+
+<style>
+  header-drawer {
+    justify-self: start;
+    margin-left: -1.2rem;
+  }
+
+  {%- if section.settings.sticky_header_type == 'reduce-logo-size' -%}
+    .scrolled-past-header .header__heading-logo-wrapper {
+      width: 75%;
+    }
+  {%- endif -%}
+
+  {%- if section.settings.menu_type_desktop != "drawer" -%}
+    @media screen and (min-width: 990px) {
+      header-drawer {
+        display: none;
+      }
+    }
+  {%- endif -%}
+
+  .menu-drawer-container {
+    display: flex;
+  }
+
+  .list-menu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .list-menu--inline {
+    display: inline-flex;
+    flex-wrap: wrap;
+  }
+
+  summary.list-menu__item {
+    padding-right: 2.7rem;
+  }
+
+  .list-menu__item {
+    display: flex;
+    align-items: center;
+    line-height: calc(1 + 0.3 / var(--font-body-scale));
+  }
+
+  .list-menu__item--link {
+    text-decoration: none;
+    padding-bottom: 1rem;
+    padding-top: 1rem;
+    line-height: calc(1 + 0.8 / var(--font-body-scale));
+  }
+
+  @media screen and (min-width: 750px) {
+    .list-menu__item--link {
+      padding-bottom: 0.5rem;
+      padding-top: 0.5rem;
+    }
+  }
+</style>
+
+{%- style -%}
+  .header {
+    padding: {{ section.settings.padding_top | times: 0.5 | round: 0 }}px 3rem {{ section.settings.padding_bottom | times: 0.5 | round: 0 }}px 3rem;
+  }
+
+  .section-header {
+    position: sticky; /* This is for fixing a Safari z-index issue. PR #2147 */
+    margin-bottom: {{ section.settings.margin_bottom | times: 0.75 | round: 0 }}px;
+  }
+
+  @media screen and (min-width: 750px) {
+    .section-header {
+      margin-bottom: {{ section.settings.margin_bottom }}px;
+    }
+  }
+
+  @media screen and (min-width: 990px) {
+    .header {
+      padding-top: {{ section.settings.padding_top }}px;
+      padding-bottom: {{ section.settings.padding_bottom }}px;
+    }
+  }
+{%- endstyle -%}
+
+<script src="{{ 'cart-notification.js' | asset_url }}" defer="defer"></script>
+
+{%- liquid
+  for block in section.blocks
+    if block.type == '@app'
+      assign has_app_block = true
+    endif
+  endfor
+-%}
+
+<{% if section.settings.sticky_header_type != 'none' %}sticky-header data-sticky-type="{{ section.settings.sticky_header_type }}"{% else %}div{% endif %} class="header-wrapper color-{{ section.settings.color_scheme }} gradient{% if section.settings.show_line_separator %} header-wrapper--border-bottom{% endif %}">
+  {%- liquid
+    assign social_links = false
+    assign localization_forms = false
+
+    if settings.social_twitter_link != blank or settings.social_facebook_link != blank or settings.social_pinterest_link != blank or settings.social_instagram_link != blank or settings.social_youtube_link != blank or settings.social_vimeo_link != blank or settings.social_tiktok_link != blank or settings.social_tumblr_link != blank or settings.social_snapchat_link != blank
+      assign social_links = true
+    endif
+
+    if localization.available_countries.size > 1 and section.settings.enable_country_selector or section.settings.enable_language_selector and localization.available_languages.size > 1
+      assign localization_forms = true
+    endif
+  -%}
+  <header class="header header--{{ section.settings.logo_position }} header--mobile-{{ section.settings.mobile_logo_position }} page-width{% if section.settings.menu_type_desktop == 'drawer' %} drawer-menu{% endif %}{% if section.settings.menu != blank %} header--has-menu{% endif %}{% if has_app_block %} header--has-app{% endif %}{% if social_links %} header--has-social{% endif %}{% if shop.customer_accounts_enabled %} header--has-account{% endif %}{% if localization_forms %} header--has-localizations{% endif %}">
+    {%- liquid
+      if section.settings.menu != blank
+        render 'header-drawer'
+      endif
+
+      if section.settings.logo_position == 'top-center' or section.settings.menu == blank
+        render 'header-search', input_id: 'Search-In-Modal-1'
+      endif
+    -%}
+
+    {%- if section.settings.logo_position != 'middle-center' -%}
+      {%- if request.page_type == 'index' -%}
+        <h1 class="header__heading">
+      {%- endif -%}
+          <a href="{{ routes.root_url }}" class="header__heading-link link link--text focus-inset">
+            {%- if settings.logo != blank -%}
+              <div class="header__heading-logo-wrapper">
+                {%- assign logo_alt = settings.logo.alt | default: shop.name | escape -%}
+                {%- assign logo_height = settings.logo_width | divided_by: settings.logo.aspect_ratio -%}
+                {% capture sizes %}(max-width: {{ settings.logo_width | times: 2 }}px) 50vw, {{ settings.logo_width }}px{% endcapture %}
+                {% capture widths %}{{ settings.logo_width }}, {{ settings.logo_width | times: 1.5 | round }}, {{ settings.logo_width | times: 2 }}{% endcapture %}
+                {{ settings.logo | image_url: width: 600 | image_tag:
+                  class: 'header__heading-logo motion-reduce',
+                  widths: widths,
+                  height: logo_height,
+                  width: settings.logo_width,
+                  alt: logo_alt,
+                  sizes: sizes,
+                  preload: true
+                }}
+              </div>
+            {%- else -%}
+              <span class="h2">{{ shop.name }}</span>
+            {%- endif -%}
+          </a>
+      {%- if request.page_type == 'index' -%}
+        </h1>
+      {%- endif -%}
+    {%- endif -%}
+
+    {%- liquid
+      if section.settings.menu != blank
+        if section.settings.menu_type_desktop == 'dropdown'
+          render 'header-dropdown-menu'
+        elsif section.settings.menu_type_desktop != 'drawer'
+          render 'header-mega-menu'
+        endif
+      endif
+    %}
+
+    {%- if section.settings.logo_position == 'middle-center' -%}
+      {%- if request.page_type == 'index' -%}
+        <h1 class="header__heading">
+      {%- endif -%}
+          <a href="{{ routes.root_url }}" class="header__heading-link link link--text focus-inset">
+            {%- if settings.logo != blank -%}
+              <div class="header__heading-logo-wrapper">
+                {%- assign logo_alt = settings.logo.alt | default: shop.name | escape -%}
+                {%- assign logo_height = settings.logo_width | divided_by: settings.logo.aspect_ratio -%}
+                {% capture sizes %}(min-width: 750px) {{ settings.logo_width }}px, 50vw{% endcapture %}
+                {% capture widths %}{{ settings.logo_width }}, {{ settings.logo_width | times: 1.5 | round }}, {{ settings.logo_width | times: 2 }}{% endcapture %}
+                {{ settings.logo | image_url: width: 600 | image_tag:
+                  class: 'header__heading-logo',
+                  widths: widths,
+                  height: logo_height,
+                  width: settings.logo_width,
+                  alt: logo_alt,
+                  sizes: sizes,
+                  preload: true
+                }}
+              </div>
+            {%- else -%}
+              <span class="h2">{{ shop.name }}</span>
+            {%- endif -%}
+          </a>
+      {%- if request.page_type == 'index' -%}
+        </h1>
+      {%- endif -%}
+    {%- endif -%}
+
+    <div class="header__icons{% if section.settings.enable_country_selector or section.settings.enable_language_selector %} header__icons--localization header-localization{% endif %}">
+      <div class="desktop-localization-wrapper">
+        {%- if section.settings.enable_country_selector and localization.available_countries.size > 1 -%}
+          <localization-form class="small-hide medium-hide" data-prevent-hide>
+            {%- form 'localization', id: 'HeaderCountryForm', class: 'localization-form' -%}
+              <div>
+                <h2 class="visually-hidden" id="HeaderCountryLabel">{{ 'localization.country_label' | t }}</h2>
+                {%- render 'country-localization', localPosition: 'HeaderCountry' -%}
+              </div>
+            {%- endform -%}
+          </localization-form>
+        {% endif %}
+
+        {%- if section.settings.enable_language_selector and localization.available_languages.size > 1 -%}
+          <localization-form class="small-hide medium-hide" data-prevent-hide>
+            {%- form 'localization', id: 'HeaderLanguageForm', class: 'localization-form' -%}
+              <div>
+                <h2 class="visually-hidden" id="HeaderLanguageLabel">{{ 'localization.language_label' | t }}</h2>
+                {%- render 'language-localization', localPosition: 'HeaderLanguage' -%}
+              </div>
+            {%- endform -%}
+          </localization-form>
+        {%- endif -%}
+      </div>
+      {% render 'header-search', input_id: 'Search-In-Modal' %}
+
+{%- if shop.customer_accounts_enabled -%}
+  <a href="#" class="header__icon header__icon--account link focus-inset{% if section.settings.menu != blank %} small-hide{% endif %}" id="account-icon">
+    {%- if section.settings.enable_customer_avatar -%}
+      <account-icon>
+        {%- if customer and customer.has_avatar? -%}
+          {{ customer | avatar }}
+        {%- else -%}
+          <span class="svg-wrapper">{{ 'icon-account.svg' | inline_asset_content }}</span>
+        {%- endif -%}
+      </account-icon>
+    {%- else -%}
+      <span class="svg-wrapper">{{ 'icon-account.svg' | inline_asset_content }}</span>
+    {%- endif -%}
+    <span class="visually-hidden">
+      {%- liquid
+        if customer
+          echo 'customer.account_fallback' | t
+        else
+          echo 'customer.log_in' | t
+        endif
+      -%}
+    </span>
+  </a>
+
+  <!-- Popup Modal -->
+  <div id="account-popup" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <!-- Tabbed navigation -->
+      <div class="tabs">
+        <button class="tab-link active" id="login-tab">Login</button>
+      </div>
+      
+      <!-- Login Form -->
+      <div id="login-form" class="form-content">
+        <form method="post" action="/account/login">
+          <label for="CustomerEmail">Email</label>
+          <input type="email" name="customer[email]" id="CustomerEmail" placeholder="Enter your email" required>
+          <label for="CustomerPassword">Password</label>
+          <input type="password" name="customer[password]" id="CustomerPassword" placeholder="Enter your password" required>
+          <button type="submit" class="button">Login</button>
+        </form>
+        <div class="register-prompt">
+          <p>Please register if you don't have an account.</p>
+          <button id="show-register" class="button">Register</button>
+        </div>
+      </div>
+
+      <!-- Register Form -->
+      <div id="register-form" class="form-content" style="display:none;">
+        <form method="post" action="/account/register">
+          <label for="RegisterCustomerEmail">Email</label>
+          <input type="email" name="customer[email]" id="RegisterCustomerEmail" placeholder="Enter your email" required>
+          <label for="RegisterCustomerPassword">Password</label>
+          <input type="password" name="customer[password]" id="RegisterCustomerPassword" placeholder="Create a password" required>
+          <button type="submit" class="button">Register</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    /* The Modal (background) */
+    .modal {
+      display: none; /* Hidden by default */
+      position: fixed; 
+      z-index: 1000; 
+      left: 0;
+      top: 0;
+      width: 100%; 
+      height: 100%;
+      overflow: auto; 
+      background-color: rgba(0, 0, 0, 0.4); 
+      opacity: 0; /* Start invisible */
+      transition: opacity 0.3s ease; /* Fade effect */
+    }
+
+    /* Show the modal */
+    .modal.show {
+      display: block;
+      opacity: 1; /* Fade in */
+    }
+
+    /* Modal Content */
+    .modal-content {
+      background-color: #fff;
+      margin: 10% auto;
+      padding: 20px;
+      border-radius: 5px;
+      width: 90%; 
+      max-width: 500px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+      transform: scale(0.8); /* Start small */
+      transition: transform 0.3s ease, opacity 0.3s ease; /* Zoom and fade effect */
+      opacity: 0; /* Start invisible */
+    }
+
+    /* Show modal content */
+    .modal.show .modal-content {
+      transform: scale(1); /* Zoom in */
+      opacity: 1; /* Fully visible */
+    }
+
+    /* Close Button */
+    .close {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+    }
+
+    .close:hover, .close:focus {
+      color: black;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .form-content {
+      margin-top: 20px;
+    }
+
+    .form-content input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+
+    .form-content button {
+      width: 100%;
+      padding: 10px;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .form-content button:hover {
+      background-color: #45a049;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 20px;
+    }
+
+    .tab-link {
+      padding: 10px 20px;
+      cursor: pointer;
+      border: none;
+      background-color: #f1f1f1;
+      border-radius: 5px;
+      outline: none;
+    }
+
+    .tab-link.active {
+      background-color: #4CAF50;
+      color: white;
+    }
+
+    .register-prompt {
+      margin-top: 20px;
+      text-align: center; /* Center the prompt text */
+    }
+
+    .register-prompt p {
+      margin-bottom: 10px;
+    }
+  </style>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Get modal element and icon
+      const accountPopup = document.getElementById("account-popup");
+      const accountIcon = document.getElementById("account-icon");
+      const closeModal = document.querySelector(".modal .close");
+
+      // Tab elements
+      const loginTab = document.getElementById("login-tab");
+      const registerTab = document.getElementById("register-tab");
+      const loginForm = document.getElementById("login-form");
+      const registerForm = document.getElementById("register-form");
+
+      // Open modal on account icon click
+      accountIcon.addEventListener('click', function(event) {
+        event.preventDefault(); // Prevent default link behavior
+        accountPopup.classList.add("show"); // Add class to show modal
+      });
+
+      // Close modal on close button click
+      closeModal.addEventListener('click', function() {
+        accountPopup.classList.remove("show"); // Remove class to hide modal
+      });
+
+      // Close modal when clicking outside the modal content
+      window.addEventListener('click', function(event) {
+        if (event.target == accountPopup) {
+          accountPopup.classList.remove("show"); // Remove class to hide modal
+        }
+      });
+
+      // Show register form when the "Register" button in the login form is clicked
+      document.getElementById("show-register").addEventListener('click', function() {
+        loginForm.style.display = "none";
+        registerForm.style.display = "block";
+        registerTab.classList.add('active');
+        loginTab.classList.remove('active');
+      });
+
+      // Toggle between Login and Register forms
+      loginTab.addEventListener('click', function() {
+        loginForm.style.display = "block";
+        registerForm.style.display = "none";
+        loginTab.classList.add('active');
+        registerTab.classList.remove('active');
+      });
+
+      registerTab.addEventListener('click', function() {
+        loginForm.style.display = "none";
+        registerForm.style.display = "block";
+        registerTab.classList.add('active');
+        loginTab.classList.remove('active');
+      });
+    });
+  </script>
+{%- endif -%}
+
+
+      {%- for block in section.blocks -%}
+        {%- case block.type -%}
+          {%- when '@app' -%}
+            {% render block %}
+        {%- endcase -%}
+      {%- endfor -%}
+
+<!-- Cart Icon and Popup Cart -->
+<a href="#" class="header__icon header__icon--cart link focus-inset" id="cart-icon-bubble">
+    {% if cart == empty %}
+        <span class="svg-wrapper">{{ 'icon-cart-empty.svg' | inline_asset_content }}</span>
+    {% else %}
+        <span class="svg-wrapper">{{ 'icon-cart.svg' | inline_asset_content }}</span>
+    {% endif %}
+    <span class="visually-hidden">{{ 'templates.cart.cart' | t }}</span>
+    {%- if cart != empty -%}
+        <div class="cart-count-bubble">
+            {%- if cart.item_count < 100 -%}
+                <span aria-hidden="true">{{ cart.item_count }}</span>
+            {%- endif -%}
+            <span class="visually-hidden">{{ 'sections.header.cart_count' | t: count: cart.item_count }}</span>
+        </div>
+    {%- endif -%}
+</a>
+
+<!-- Popup Cart -->
+<div id="popup-cart" class="popup-cart hidden">
+    <div class="popup-cart-content">
+        <button id="close-popup" class="close-popup">✖</button>
+        <h2>Your Cart</h2>
+        <div class="cart-items">
+            {% for item in cart.items %}
+                <div class="cart-item">
+                    <img src="{{ item.image | img_url: 'small' }}" alt="{{ item.title }}" />
+                    <div class="cart-item-details">
+                        <h3>{{ item.title }}</h3>
+                        <div class="quantity-selector">
+                            <label for="quantity-{{item.id}}">Quantity:</label>
+                            <input type="number" 
+                                id="quantity-{{item.id}}" 
+                                class="quantity-input" 
+                                value="{{item.quantity}}" 
+                                min="1" 
+                                max="99" 
+                                data-id="{{item.id}}" />
+                        </div>
+                        <p>Price: {{ item.price | money }}</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        
+        {% if cart.total_price > 1 %}
+            <div class="cart-summary">
+                <hr class="cart-divider">
+                <div class="cart-total">
+                    <p>Total: <span class="cart-total-price">{{ cart.total_price | money }}</span></p>
+                </div>
+                
+                <div class="cart-actions">
+                    <a href="/checkout" id="proceed-checkout" class="button button--primary">
+                        Proceed to Checkout
+                    </a>
+                    <a href="/cart" id="view-cart" class="button button--secondary">
+                        View Cart
+                    </a>
+                </div>
+            </div>
+        {% else %}
+            <div class="empty-cart-message">
+                <p>Your cart is empty</p>
+                <a href="/collections/all" id="shop-now" class="button button--primary">
+                    Shop Now
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+  .cart-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 10px;
+}
+
+.cart-item-header h3 {
+    margin: 0;
+    flex: 1;
+    padding-right: 10px;
+}
+
+.remove-item {
+    background: none;
+    border: none;
+    padding: 5px;
+    cursor: pointer;
+    color: #666;
+    transition: color 0.2s ease;
+}
+
+.remove-item:hover {
+    color: #ff0000;
+}
+
+.remove-item svg {
+    display: block;
+}
+
+/* Animation for item removal */
+.cart-item {
+    transition: all 0.3s ease;
+}
+
+.cart-item.removing {
+    opacity: 0;
+    transform: translateX(100%);
+}
+/* Popup Cart Styles */
+.popup-cart {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 400px;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.95);
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    transition: transform 0.3s ease;
+    transform: translateX(100%);
+}
+
+.popup-cart-content {
+    padding: 20px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.hidden {
+    display: none;
+}
+
+.close-popup {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    border: none;
+    background: none;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+/* Cart Items Styles */
+.cart-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.cart-item img {
+    width: 80px;
+    height: auto;
+    margin-right: 15px;
+}
+
+.cart-item-details {
+    flex-grow: 1;
+}
+
+.cart-item-details h3 {
+    margin: 0 0 5px;
+    font-size: 1rem;
+}
+
+/* Quantity Selector Styles */
+.quantity-selector {
+    margin: 10px 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.quantity-input {
+    width: 60px;
+    padding: 5px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+/* Cart Summary Styles */
+.cart-summary {
+    margin-top: auto;
+    padding-top: 20px;
+}
+
+.cart-divider {
+    border: 0;
+    border-top: 1px solid #ddd;
+    margin: 15px 0;
+}
+
+.cart-total {
+    font-size: 1.1rem;
+    margin-bottom: 20px;
+}
+
+.cart-total-price {
+    font-weight: bold;
+}
+
+/* Button Styles */
+.button {
+    display: block;
+    padding: 12px 20px;
+    text-align: center;
+    text-decoration: none;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    font-weight: 500;
+    margin: 10px 0;
+}
+
+.button--primary {
+    background-color: #4CAF50;
+    color: white;
+    border: 1px solid #4CAF50;
+}
+
+.button--primary:hover {
+    background-color: #45a049;
+    transform: translateY(-1px);
+}
+
+.button--secondary {
+    background-color: #f8f9fa;
+    color: #212529;
+    border: 1px solid #dee2e6;
+}
+
+.button--secondary:hover {
+    background-color: #e9ecef;
+    transform: translateY(-1px);
+}
+
+/* Cart Count Bubble */
+.cart-count-bubble {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background-color: #ff0000;
+    color: white;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 12px;
+    min-width: 20px;
+    text-align: center;
+}
+
+/* Empty Cart Message */
+.empty-cart-message {
+    text-align: center;
+    padding: 30px 20px;
+}
+
+.empty-cart-message p {
+    color: #6c757d;
+    margin-bottom: 20px;
+    font-size: 1.1rem;
+}
+
+/* Show the popup when active */
+.popup-cart.show {
+    transform: translateX(0);
+}
+
+/* Responsive Styles */
+@media (max-width: 480px) {
+    .popup-cart {
+        width: 100%;
+    }
+    
+    .cart-actions {
+        flex-direction: column;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const cartIcon = document.getElementById('cart-icon-bubble');
+    const popupCart = document.getElementById('popup-cart');
+    const closePopup = document.getElementById('close-popup');
+    const cartItemsContainer = document.querySelector('.cart-items');
+    const cartTotalPrice = document.querySelector('.cart-total-price');
+    const cartCountBubble = document.querySelector('.cart-count-bubble');
+    const emptyCartMessage = document.querySelector('.empty-cart-message');
+    const cartSummary = document.querySelector('.cart-summary');
+
+    // Function to format money
+    function formatMoney(cents) {
+        return (cents/100).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+    }
+
+      async function removeItem(itemId) {
+        try {
+            const cartItem = document.querySelector(`[data-id="${itemId}"]`).closest('.cart-item');
+            cartItem.classList.add('removing');
+
+            const response = await fetch('/cart/change.js', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    id: itemId,
+                    quantity: 0
+                })
+            });
+            
+            const cart = await response.json();
+            
+            // Wait for animation to complete before updating display
+            setTimeout(() => {
+                updateCartDisplay(cart);
+            }, 300);
+        } catch (error) {
+            console.error('Error removing item from cart:', error);
+        }
+    }
+
+   // Function to handle adding items to cart
+async function addToCart(formData) {
+    try {
+        const response = await fetch('/cart/add.js', {
+            method: 'POST',
+            body: formData
+        });
+        const item = await response.json();
+        
+        // Fetch updated cart data
+        const cartResponse = await fetch('/cart.js');
+        const cart = await cartResponse.json();
+        
+        // Show the popup cart
+        popupCart.classList.remove('hidden');
+        popupCart.classList.add('show');
+        
+        // Update cart display with the new cart data
+        updateCartDisplay(cart);
+        
+        // Make sure cart summary is visible if there are items
+        if (cart.item_count > 0) {
+            if (cartSummary) {
+                cartSummary.style.display = 'block';
+            }
+            if (cartTotalPrice) {
+                cartTotalPrice.textContent = `${formatMoney(cart.total_price)} Rs`;
+            }
+            if (emptyCartMessage) {
+                emptyCartMessage.style.display = 'none';
+            }
+        }
+    } catch (error) {
+        console.error('Error adding to cart:', error);
+    }
+}
+
+// Update the updateCartDisplay function
+function updateCartDisplay(cart) {
+    if (!cartItemsContainer) return;
+
+    if (cart.item_count > 0) {
+        let cartHTML = '';
+        cart.items.forEach(item => {
+            cartHTML += `
+                <div class="cart-item">
+                    <img src="${item.image}" alt="${item.title}" />
+                    <div class="cart-item-details">
+                        <div class="cart-item-header">
+                            <h3>${item.title}</h3>
+                            <button class="remove-item" data-id="${item.id}" aria-label="Remove item">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M3 6h18"></path>
+                                    <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                                    <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="quantity-selector">
+                            <label for="quantity-${item.id}">Quantity:</label>
+                            <input type="number" 
+                                id="quantity-${item.id}" 
+                                class="quantity-input" 
+                                value="${item.quantity}" 
+                                min="1" 
+                                max="99" 
+                                data-id="${item.id}" />
+                        </div>
+                        <p>Price: ${formatMoney(item.price)} Rs</p>
+                    </div>
+                </div>
+            `;
+        });
+        cartItemsContainer.innerHTML = cartHTML;
+
+        // Update cart summary and total price
+        if (cartSummary) {
+            cartSummary.style.display = 'block';
+            
+            // Create cart summary content if it doesn't exist
+            if (!cartSummary.querySelector('.cart-total')) {
+                cartSummary.innerHTML = `
+                    <div class="cart-total">
+                        <p>Total: <span class="cart-total-price">${formatMoney(cart.total_price)} Rs</span></p>
+                    </div>
+                    <div class="cart-actions">
+                        <a href="/checkout" id="proceed-checkout" class="button button--primary">
+                            Proceed to Checkout
+                        </a>
+                        <a href="/cart" id="view-cart" class="button button--secondary">
+                            View Cart
+                        </a>
+                    </div>
+                `;
+            } else if (cartTotalPrice) {
+                cartTotalPrice.textContent = `${formatMoney(cart.total_price)} Rs`;
+            }
+        }
+        
+        if (emptyCartMessage) {
+            emptyCartMessage.style.display = 'none';
+        }
+
+        updateCartCount(cart.item_count);
+    } else {
+        if (emptyCartMessage) {
+            emptyCartMessage.style.display = 'block';
+        }
+        if (cartSummary) {
+            cartSummary.style.display = 'none';
+        }
+        cartItemsContainer.innerHTML = '';
+        updateCartCount(0);
+    }
+}
+
+    // Add event listener for remove buttons
+    document.addEventListener('click', function(event) {
+        if (event.target.closest('.remove-item')) {
+            event.preventDefault();
+            const button = event.target.closest('.remove-item');
+            const itemId = button.dataset.id;
+            removeItem(itemId);
+        }
+    });
+
+
+
+    // Function to update cart count bubble
+    function updateCartCount(count) {
+        const existingBubble = document.querySelector('.cart-count-bubble');
+        if (count > 0) {
+            if (!existingBubble) {
+                const newBubble = document.createElement('div');
+                newBubble.className = 'cart-count-bubble';
+                newBubble.innerHTML = `<span aria-hidden="true">${count}</span>`;
+                cartIcon.appendChild(newBubble);
+            } else {
+                existingBubble.querySelector('span[aria-hidden="true"]').textContent = count;
+            }
+        } else {
+            if (existingBubble) {
+                existingBubble.remove();
+            }
+        }
+    }
+
+    // Function to update item quantity
+    async function updateItemQuantity(itemId, newQuantity) {
+        try {
+            const response = await fetch('/cart/change.js', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    id: itemId,
+                    quantity: parseInt(newQuantity)
+                })
+            });
+            
+            const cart = await response.json();
+            updateCartDisplay(cart);
+        } catch (error) {
+            console.error('Error updating cart:', error);
+        }
+    }
+
+    // Show the popup cart
+    cartIcon.addEventListener('click', async function(event) {
+        event.preventDefault();
+        popupCart.classList.remove('hidden');
+        popupCart.classList.add('show');
+        
+        try {
+            const response = await fetch('/cart.js');
+            const cart = await response.json();
+            updateCartDisplay(cart);
+        } catch (error) {
+            console.error('Error fetching cart:', error);
+        }
+    });
+
+    // Close the popup cart
+    closePopup.addEventListener('click', function() {
+        popupCart.classList.remove('show');
+        setTimeout(() => {
+            popupCart.classList.add('hidden');
+        }, 300);
+    });
+
+    // Close popup when clicking outside
+    popupCart.addEventListener('click', function(event) {
+        if (event.target === popupCart) {
+            closePopup.click();
+        }
+    });
+
+    // Handle quantity changes
+    document.addEventListener('change', function(event) {
+        if (event.target.classList.contains('quantity-input')) {
+            const itemId = event.target.dataset.id;
+            const newQuantity = event.target.value;
+            updateItemQuantity(itemId, newQuantity);
+        }
+    });
+
+    // Function to handle adding items to cart
+    async function addToCart(formData) {
+        try {
+            const response = await fetch('/cart/add.js', {
+                method: 'POST',
+                body: formData
+            });
+            const item = await response.json();
+            
+            // Fetch updated cart data
+            const cartResponse = await fetch('/cart.js');
+            const cart = await cartResponse.json();
+            
+            // Update the cart display
+            updateCartDisplay(cart);
+            
+            // Show the popup cart
+            popupCart.classList.remove('hidden');
+            popupCart.classList.add('show');
+        } catch (error) {
+            console.error('Error adding to cart:', error);
+        }
+    }
+
+    // Add event listener for add to cart forms
+    document.addEventListener('submit', function(event) {
+        if (event.target.matches('form[action="/cart/add"]')) {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            addToCart(formData);
+        }
+    });
+
+    // Initial cart fetch
+    fetch('/cart.js')
+        .then(response => response.json())
+        .then(cart => updateCartDisplay(cart))
+        .catch(error => console.error('Error fetching initial cart:', error));
+});
+</script>
+    </div>
+  </header>
+</{% if section.settings.sticky_header_type != 'none' %}sticky-header{% else %}div{% endif %}>
+
+{%- if settings.cart_type == "notification" -%}
+  {%- render 'cart-notification', color_scheme: section.settings.color_scheme, desktop_menu_type: section.settings.menu_type_desktop -%}
+{%- endif -%}
+
+{% javascript %}
+  class StickyHeader extends HTMLElement {
+    constructor() {
+      super();
+    }
+
+    connectedCallback() {
+      this.header = document.querySelector('.section-header');
+      this.headerIsAlwaysSticky = this.getAttribute('data-sticky-type') === 'always' || this.getAttribute('data-sticky-type') === 'reduce-logo-size';
+      this.headerBounds = {};
+
+      this.setHeaderHeight();
+
+      window.matchMedia('(max-width: 990px)').addEventListener('change', this.setHeaderHeight.bind(this));
+
+      if (this.headerIsAlwaysSticky) {
+        this.header.classList.add('shopify-section-header-sticky');
+      };
+
+      this.currentScrollTop = 0;
+      this.preventReveal = false;
+      this.predictiveSearch = this.querySelector('predictive-search');
+
+      this.onScrollHandler = this.onScroll.bind(this);
+      this.hideHeaderOnScrollUp = () => this.preventReveal = true;
+
+      this.addEventListener('preventHeaderReveal', this.hideHeaderOnScrollUp);
+      window.addEventListener('scroll', this.onScrollHandler, false);
+
+      this.createObserver();
+    }
+
+    setHeaderHeight() {
+      document.documentElement.style.setProperty('--header-height', `${this.header.offsetHeight}px`);
+    }
+
+    disconnectedCallback() {
+      this.removeEventListener('preventHeaderReveal', this.hideHeaderOnScrollUp);
+      window.removeEventListener('scroll', this.onScrollHandler);
+    }
+
+    createObserver() {
+      let observer = new IntersectionObserver((entries, observer) => {
+        this.headerBounds = entries[0].intersectionRect;
+        observer.disconnect();
+      });
+
+      observer.observe(this.header);
+    }
+
+    onScroll() {
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+
+      if (this.predictiveSearch && this.predictiveSearch.isOpen) return;
+
+      if (scrollTop > this.currentScrollTop && scrollTop > this.headerBounds.bottom) {
+        this.header.classList.add('scrolled-past-header');
+        if (this.preventHide) return;
+        requestAnimationFrame(this.hide.bind(this));
+      } else if (scrollTop < this.currentScrollTop && scrollTop > this.headerBounds.bottom) {
+        this.header.classList.add('scrolled-past-header');
+        if (!this.preventReveal) {
+          requestAnimationFrame(this.reveal.bind(this));
+        } else {
+          window.clearTimeout(this.isScrolling);
+
+          this.isScrolling = setTimeout(() => {
+            this.preventReveal = false;
+          }, 66);
+
+          requestAnimationFrame(this.hide.bind(this));
+        }
+      } else if (scrollTop <= this.headerBounds.top) {
+        this.header.classList.remove('scrolled-past-header');
+        requestAnimationFrame(this.reset.bind(this));
+      }
+
+      this.currentScrollTop = scrollTop;
+    }
+
+    hide() {
+      if (this.headerIsAlwaysSticky) return;
+      this.header.classList.add('shopify-section-header-hidden', 'shopify-section-header-sticky');
+      this.closeMenuDisclosure();
+      this.closeSearchModal();
+    }
+
+    reveal() {
+      if (this.headerIsAlwaysSticky) return;
+      this.header.classList.add('shopify-section-header-sticky', 'animate');
+      this.header.classList.remove('shopify-section-header-hidden');
+    }
+
+    reset() {
+      if (this.headerIsAlwaysSticky) return;
+      this.header.classList.remove('shopify-section-header-hidden', 'shopify-section-header-sticky', 'animate');
+    }
+
+    closeMenuDisclosure() {
+      this.disclosures = this.disclosures || this.header.querySelectorAll('header-menu');
+      this.disclosures.forEach(disclosure => disclosure.close());
+    }
+
+    closeSearchModal() {
+      this.searchModal = this.searchModal || this.header.querySelector('details-modal');
+      this.searchModal.close(false);
+    }
+  }
+
+  customElements.define('sticky-header', StickyHeader);
+{% endjavascript %}
+
+<script type="application/ld+json">
+  {
+    "@context": "http://schema.org",
+    "@type": "Organization",
+    "name": {{ shop.name | json }},
+    {% if settings.logo %}
+      "logo": {{ settings.logo | image_url: width: 500 | prepend: "https:" | json }},
+    {% endif %}
+    "sameAs": [
+      {{ settings.social_twitter_link | json }},
+      {{ settings.social_facebook_link | json }},
+      {{ settings.social_pinterest_link | json }},
+      {{ settings.social_instagram_link | json }},
+      {{ settings.social_tiktok_link | json }},
+      {{ settings.social_tumblr_link | json }},
+      {{ settings.social_snapchat_link | json }},
+      {{ settings.social_youtube_link | json }},
+      {{ settings.social_vimeo_link | json }}
+    ],
+    "url": {{ request.origin | append: page.url | json }}
+  }
+</script>
+
+{%- if request.page_type == 'index' -%}
+  {% assign potential_action_target = request.origin | append: routes.search_url | append: "?q={search_term_string}" %}
+  <script type="application/ld+json">
+    {
+      "@context": "http://schema.org",
+      "@type": "WebSite",
+      "name": {{ shop.name | json }},
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {{ potential_action_target | json }},
+        "query-input": "required name=search_term_string"
+      },
+      "url": {{ request.origin | append: page.url | json }}
+    }
+  </script>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "t:sections.header.name",
+  "class": "section-header",
+  "max_blocks": 3,
+  "settings": [
+    {
+      "type": "select",
+      "id": "logo_position",
+      "options": [
+        {
+          "value": "top-left",
+          "label": "t:sections.header.settings.logo_position.options__2.label"
+        },
+        {
+          "value": "top-center",
+          "label": "t:sections.header.settings.logo_position.options__3.label"
+        },
+        {
+          "value": "middle-left",
+          "label": "t:sections.header.settings.logo_position.options__1.label"
+        },
+        {
+          "value": "middle-center",
+          "label": "t:sections.header.settings.logo_position.options__4.label"
+        }
+      ],
+      "default": "middle-left",
+      "label": "t:sections.header.settings.logo_position.label",
+      "info": "t:sections.header.settings.logo_help.content"
+    },
+    {
+      "type": "link_list",
+      "id": "menu",
+      "default": "main-menu",
+      "label": "t:sections.header.settings.menu.label"
+    },
+    {
+      "type": "select",
+      "id": "menu_type_desktop",
+      "options": [
+        {
+          "value": "dropdown",
+          "label": "t:sections.header.settings.menu_type_desktop.options__1.label"
+        },
+        {
+          "value": "mega",
+          "label": "t:sections.header.settings.menu_type_desktop.options__2.label"
+        },
+        {
+          "value": "drawer",
+          "label": "t:sections.header.settings.menu_type_desktop.options__3.label"
+        }
+      ],
+      "default": "dropdown",
+      "label": "t:sections.header.settings.menu_type_desktop.label",
+      "info": "t:sections.header.settings.menu_type_desktop.info"
+    },
+    {
+      "type": "select",
+      "id": "sticky_header_type",
+      "options": [
+        {
+          "value": "none",
+          "label": "t:sections.header.settings.sticky_header_type.options__1.label"
+        },
+        {
+          "value": "on-scroll-up",
+          "label": "t:sections.header.settings.sticky_header_type.options__2.label"
+        },
+        {
+          "value": "always",
+          "label": "t:sections.header.settings.sticky_header_type.options__3.label"
+        },
+        {
+          "value": "reduce-logo-size",
+          "label": "t:sections.header.settings.sticky_header_type.options__4.label"
+        }
+      ],
+      "default": "on-scroll-up",
+      "label": "t:sections.header.settings.sticky_header_type.label"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_line_separator",
+      "default": true,
+      "label": "t:sections.header.settings.show_line_separator.label"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.header.settings.header__1.content"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:sections.all.colors.label",
+      "default": "scheme-1"
+    },
+    {
+      "type": "color_scheme",
+      "id": "menu_color_scheme",
+      "label": "t:sections.header.settings.menu_color_scheme.label",
+      "default": "scheme-1"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.header.settings.header__3.content",
+      "info": "t:sections.header.settings.header__4.info"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_country_selector",
+      "default": false,
+      "label": "t:sections.header.settings.enable_country_selector.label"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.header.settings.header__5.content",
+      "info": "t:sections.header.settings.header__6.info"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_language_selector",
+      "default": false,
+      "label": "t:sections.header.settings.enable_language_selector.label"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.header.settings.header__7.content",
+      "info": "t:sections.header.settings.header__7.info"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_customer_avatar",
+      "default": true,
+      "label": "t:sections.header.settings.enable_customer_avatar.label",
+      "info": "t:sections.header.settings.enable_customer_avatar.info"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.header.settings.mobile_layout.content"
+    },
+    {
+      "type": "select",
+      "id": "mobile_logo_position",
+      "options": [
+        {
+          "value": "center",
+          "label": "t:sections.header.settings.mobile_logo_position.options__1.label"
+        },
+        {
+          "value": "left",
+          "label": "t:sections.header.settings.mobile_logo_position.options__2.label"
+        }
+      ],
+      "default": "center",
+      "label": "t:sections.header.settings.mobile_logo_position.label"
+    },
+    {
+      "type": "header",
+      "content": "t:sections.all.spacing"
+    },
+    {
+      "type": "range",
+      "id": "margin_bottom",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "t:sections.header.settings.margin_bottom.label",
+      "default": 0
+    },
+    {
+      "type": "header",
+      "content": "t:sections.all.padding.section_padding_heading"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 36,
+      "step": 4,
+      "unit": "px",
+      "label": "t:sections.all.padding.padding_top",
+      "default": 20
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 36,
+      "step": 4,
+      "unit": "px",
+      "label": "t:sections.all.padding.padding_bottom",
+      "default": 20
+    }
+  ],
+  "blocks": [
+    {
+      "type": "@app"
+    }
+  ]
+}
+{% endschema %}
