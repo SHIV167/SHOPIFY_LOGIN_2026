@@ -1,52 +1,4 @@
 {% if template == 'index' %}
-  <!-- Account Popup Modal -->
-  <div id="account-popup" class="modal">
-    <div class="modal-content">
-      <span class="close">&times;</span>
-      <div class="tabs">
-        <button class="tab-link active" id="login-tab">Login</button>
-      </div>
-
-      <!-- Login Form -->
-      <div id="login-form" class="form-content">
-        <form method="post" action="/account/login">
-          <label for="CustomerEmail">Email</label>
-          <input type="email" name="customer[email]" id="CustomerEmail" placeholder="Enter your email" required>
-          <label for="CustomerPassword">Password</label>
-          <input
-            type="password"
-            name="customer[password]"
-            id="CustomerPassword"
-            placeholder="Enter your password"
-            required
-          >
-          <button type="submit" class="button">Login</button>
-        </form>
-        <div class="register-prompt">
-          <p>Please register if you don't have an account.</p>
-          <button id="show-register" class="button">Register</button>
-        </div>
-      </div>
-
-      <!-- Register Form -->
-      <div id="register-form" class="form-content" style="display:none;">
-        <form method="post" action="/account/register">
-          <label for="RegisterCustomerEmail">Email</label>
-          <input type="email" name="customer[email]" id="RegisterCustomerEmail" placeholder="Enter your email" required>
-          <label for="RegisterCustomerPassword">Password</label>
-          <input
-            type="password"
-            name="customer[password]"
-            id="RegisterCustomerPassword"
-            placeholder="Create a password"
-            required
-          >
-          <button type="submit" class="button">Register</button>
-        </form>
-      </div>
-    </div>
-  </div>
-
   <div class="footer-menu-wrapper">
     <nav class="footer-menu mobile-only">
       <ul>
@@ -107,77 +59,6 @@
 {% endif %}
 
 <style>
-  .modal {
-    display: none;
-    position: fixed;
-    z-index: 1001;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
-  }
-
-  .modal.show {
-    display: block;
-  }
-
-  .modal-content {
-    background-color: #fff;
-    margin: 15% auto;
-    padding: 20px;
-    border-radius: 8px;
-    width: 90%;
-    max-width: 500px;
-    position: relative;
-  }
-
-  .close {
-    position: absolute;
-    right: 20px;
-    top: 10px;
-    color: #aaa;
-    font-size: 28px;
-    font-weight: bold;
-    cursor: pointer;
-  }
-
-  .close:hover {
-    color: #000;
-  }
-
-  .form-content {
-    margin-top: 20px;
-  }
-
-  .form-content input {
-    width: 100%;
-    padding: 10px;
-    margin: 8px 0 16px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    box-sizing: border-box;
-  }
-
-  .form-content button {
-    width: 100%;
-    padding: 12px;
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-
-  .form-content button:hover {
-    background-color: #45a049;
-  }
-
-  .register-prompt {
-    margin-top: 20px;
-    text-align: center;
-  }
-
   /* Mobile Footer Menu Styles */
   .footer-menu-wrapper {
     display: none;
@@ -224,74 +105,24 @@
       width: 40px;
       height: 40px;
     }
-
-    .modal-content {
-      margin: 20% auto;
-    }
   }
 </style>
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    // Debug log
-    console.log('Script loaded');
-
-    // Get DOM elements
-    const modal = document.getElementById('account-popup');
     const accountTrigger = document.querySelector('.account-trigger');
-    const closeBtn = document.querySelector('.close');
-    const loginForm = document.getElementById('login-form');
-    const registerForm = document.getElementById('register-form');
-    const showRegisterBtn = document.getElementById('show-register');
-    const loginTab = document.getElementById('login-tab');
-
-    // Debug log
-    console.log('Elements found:', {
-      modal: !!modal,
-      accountTrigger: !!accountTrigger,
-      closeBtn: !!closeBtn,
-      loginForm: !!loginForm,
-      registerForm: !!registerForm,
-      showRegisterBtn: !!showRegisterBtn,
-      loginTab: !!loginTab
-    });
-
-    // Open modal
-    accountTrigger.addEventListener('click', function(e) {
-      e.preventDefault();
-      console.log('Account trigger clicked');
-      modal.classList.add('show');
-    });
-
-    // Close modal
-    closeBtn.addEventListener('click', function() {
-      console.log('Close button clicked');
-      modal.classList.remove('show');
-    });
-
-    // Close modal when clicking outside
-    window.addEventListener('click', function(e) {
-      if (e.target === modal) {
-        console.log('Clicked outside modal');
-        modal.classList.remove('show');
-      }
-    });
-
-    // Show register form
-    showRegisterBtn.addEventListener('click', function() {
-      console.log('Show register clicked');
-      loginForm.style.display = 'none';
-      registerForm.style.display = 'block';
-      loginTab.classList.remove('active');
-    });
-
-    // Show login form
-    loginTab.addEventListener('click', function() {
-      console.log('Login tab clicked');
-      loginForm.style.display = 'block';
-      registerForm.style.display = 'none';
-      loginTab.classList.add('active');
-    });
+    if (accountTrigger) {
+      accountTrigger.addEventListener('click', function(e) {
+        e.preventDefault();
+        // Open the app-based login modal
+        if (window.lrOpenModal) {
+          window.lrOpenModal('login');
+        } else {
+          // Fallback to login page if app not loaded
+          window.location.href = '/account/login';
+        }
+      });
+    }
   });
 </script>
 
