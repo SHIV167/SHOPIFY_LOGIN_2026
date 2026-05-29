@@ -114,6 +114,12 @@ function EmbedContent() {
       } else {
         setSuccess('Logged in successfully!');
         localStorage.setItem('lr_customer', JSON.stringify(data.customer));
+        // Close modal by posting message to parent
+        if (window.parent !== window) {
+          setTimeout(() => {
+            window.parent.postMessage({ type: 'lr_close_modal' }, '*');
+          }, 500);
+        }
       }
     } catch {
       setError('Network error');
