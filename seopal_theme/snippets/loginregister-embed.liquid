@@ -11,7 +11,7 @@
     <button class="lr-close" onclick="lrCloseModal()" aria-label="Close">&times;</button>
     <iframe
       id="lr-iframe"
-      src="{{ app_host }}/embed?shop={{ shop.permanent_domain | url_encode }}"
+      src="about:blank"
       frameborder="0"
       allow="clipboard-write"
       title="Login / Register"
@@ -27,9 +27,19 @@
 
     function getStoredCustomer() {
       try {
-        var raw = localStorage.getItem('lr_customer');
+        var raw = localStorage.getItem('shopify_customer') || localStorage.getItem('lr_customer');
         return raw ? JSON.parse(raw) : null;
       } catch (e) { return null; }
+    }
+
+    function persistCustomer(customer) {
+      localStorage.setItem('lr_customer', JSON.stringify(customer));
+      localStorage.setItem('shopify_customer', JSON.stringify(customer));
+    }
+
+    function clearCustomer() {
+      localStorage.removeItem('lr_customer');
+      localStorage.removeItem('shopify_customer');
     }
 
     window.lrOpenModal = function(mode) {
@@ -63,16 +73,18 @@
     // Message from iframe for auto-resize, login success, logout, profile
     window.addEventListener('message', function(e) {
       if (e.origin !== '{{ app_host }}') return;
-      if (e.data && e.data.type === 'lr_login_success' && e.data.customer) {
-        localStorage.setItem('lr_customer', JSON.stringify(e.data.customer));
+      // lr_login_success — persist customer, close modal, notify theme
+      if (e.data && e.data.type === 'lr_login_success') {
+        if (e.data.customer) persistCustomer(e.data.customer);
         lrCloseModal();
-        // Optionally reload to reflect logged-in state
-        window.location.reload();
+        window.dispatchEvent(new CustomEvent('shopify:customer:login', {
+          detail: e.data.customer || null
+        }));
       }
       if (e.data && e.data.type === 'lr_logout') {
-        localStorage.removeItem('lr_customer');
+        clearCustomer();
         lrCloseModal();
-        window.location.reload();
+        window.dispatchEvent(new CustomEvent('shopify:customer:logout'));
       }
       if (e.data && e.data.type === 'lr_request_customer') {
         var c = getStoredCustomer();
@@ -128,5 +140,23 @@
   @media (max-width: 480px) {
     .lr-modal { max-height: 95vh; }
     .lr-modal iframe { height: 480px; }
+  }
+
+  /* Logged-in user initial badge — used in header, drawer and footer icons */
+  .lr-account-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.8rem;
+    height: 2.8rem;
+    border-radius: 50%;
+    background: #2d7a2d;
+    color: #fff;
+    font-size: 1.2rem;
+    font-weight: 700;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: 0;
+    flex-shrink: 0;
   }
 </style>

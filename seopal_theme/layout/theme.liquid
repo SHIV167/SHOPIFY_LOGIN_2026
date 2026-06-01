@@ -327,25 +327,7 @@
 
     {%- render 'loginregister-embed' -%}
 
-    <script>
-      // Listen for login success and close modal messages from the app
-      window.addEventListener('message', function(event) {
-        if (event.data.type === 'lr_close_modal') {
-          // Close any open modals
-          const modal = document.getElementById('account-popup');
-          if (modal) {
-            modal.classList.remove('show');
-          }
-          // Redirect to account page after successful login
-          window.location.href = '/account';
-        }
-        if (event.data.type === 'lr_login_success') {
-          // Store customer data and reload page to update UI
-          localStorage.setItem('shopify_customer', JSON.stringify(event.data.customer));
-          window.location.reload();
-        }
-      });
-    </script>
+
 
     {% sections 'header-group' %}
 

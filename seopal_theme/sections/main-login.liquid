@@ -60,9 +60,19 @@
 
     function getStoredCustomer() {
       try {
-        var raw = localStorage.getItem('lr_customer');
+        var raw = localStorage.getItem('shopify_customer') || localStorage.getItem('lr_customer');
         return raw ? JSON.parse(raw) : null;
       } catch (e) { return null; }
+    }
+
+    function persistCustomer(customer) {
+      localStorage.setItem('lr_customer', JSON.stringify(customer));
+      localStorage.setItem('shopify_customer', JSON.stringify(customer));
+    }
+
+    function clearCustomer() {
+      localStorage.removeItem('lr_customer');
+      localStorage.removeItem('shopify_customer');
     }
 
     // If already logged in, switch the iframe to profile mode immediately
@@ -75,14 +85,14 @@
     window.addEventListener('message', function(e) {
       if (e.origin !== appHost) return;
       if (e.data && e.data.type === 'lr_login_success' && e.data.customer) {
-        localStorage.setItem('lr_customer', JSON.stringify(e.data.customer));
+        persistCustomer(e.data.customer);
         // Redirect to original return_url if any, else home
         var params = new URLSearchParams(window.location.search);
         var ret = params.get('return_url') || params.get('checkout_url') || '/';
         window.location.href = ret;
       }
       if (e.data && e.data.type === 'lr_logout') {
-        localStorage.removeItem('lr_customer');
+        clearCustomer();
         window.location.href = '/';
       }
       if (e.data && e.data.type === 'lr_request_customer') {

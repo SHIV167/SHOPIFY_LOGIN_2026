@@ -227,9 +227,9 @@
       {% render 'header-search', input_id: 'Search-In-Modal' %}
 
 {%- if shop.customer_accounts_enabled -%}
-  <a href="#" class="header__icon header__icon--account link focus-inset{% if section.settings.menu != blank %} small-hide{% endif %}" id="account-icon">
+  <a href="{% if customer %}{{ routes.account_url }}{% else %}{{ routes.account_login_url }}{% endif %}" class="header__icon header__icon--account link focus-inset{% if section.settings.menu != blank %} small-hide{% endif %}" id="account-icon" data-account-url="{{ routes.account_url }}" data-login-url="{{ routes.account_login_url }}" aria-label="{% if customer %}{{ 'customer.account_fallback' | t }}{% else %}{{ 'customer.log_in' | t }}{% endif %}">
     {%- if section.settings.enable_customer_avatar -%}
-      <account-icon>
+      <account-icon data-account-icon-visual>
         {%- if customer and customer.has_avatar? -%}
           {{ customer | avatar }}
         {%- else -%}
@@ -237,9 +237,9 @@
         {%- endif -%}
       </account-icon>
     {%- else -%}
-      <span class="svg-wrapper">{{ 'icon-account.svg' | inline_asset_content }}</span>
+      <span class="svg-wrapper" data-account-icon-visual>{{ 'icon-account.svg' | inline_asset_content }}</span>
     {%- endif -%}
-    <span class="visually-hidden">
+    <span class="visually-hidden" data-account-icon-label>
       {%- liquid
         if customer
           echo 'customer.account_fallback' | t
@@ -250,27 +250,106 @@
     </span>
   </a>
 
-  <!-- App-based Login/Register Modal -->
   <script>
     document.addEventListener('DOMContentLoaded', function() {
-      const accountIcon = document.getElementById("account-icon");
-      const isLoggedIn = {% if customer %}true{% else %}false{% endif %};
-      
+      var accountIcon = document.getElementById('account-icon');
+      if (!accountIcon) return;
+
+      var accountUrl = accountIcon.dataset.accountUrl || '/account';
+      var loginUrl = accountIcon.dataset.loginUrl || '/account/login';
+      var loggedInLabel = {{ 'customer.account_fallback' | t | json }};
+      var loggedOutLabel = {{ 'customer.log_in' | t | json }};
+      var label = accountIcon.querySelector('[data-account-icon-label]');
+      var visual = accountIcon.querySelector('[data-account-icon-visual]');
+      // Cache the original icon markup BEFORE any sync so we can restore it on logout
+      var defaultVisual = visual ? visual.innerHTML : '';
+      var serverLoggedIn = {% if customer %}true{% else %}false{% endif %};
+
+      // Shopify session says logged out — wipe any stale localStorage so the icon
+      // correctly shows as logged-out and clicking opens the login modal.
+      if (!serverLoggedIn) {
+        localStorage.removeItem('lr_customer');
+        localStorage.removeItem('shopify_customer');
+      }
+
+      function getStoredCustomer() {
+        try {
+          var raw = localStorage.getItem('shopify_customer') || localStorage.getItem('lr_customer');
+          return raw ? JSON.parse(raw) : null;
+        } catch (e) {
+          return null;
+        }
+      }
+
+      function isLoggedIn() {
+        return serverLoggedIn || !!getStoredCustomer();
+      }
+
+      function getCustomerInitials(customer) {
+        var first = customer && (customer.firstName || customer.first_name || customer.name || customer.email || '').trim();
+        if (!first) return 'U';
+        return first.charAt(0).toUpperCase();
+      }
+
+      function renderLoggedInVisual(customer) {
+        if (!visual) return;
+        var initials = getCustomerInitials(customer);
+        visual.innerHTML = '<span class="lr-account-badge" aria-hidden="true">' + initials + '</span>';
+      }
+
+      function renderLoggedOutVisual() {
+        if (!visual) return;
+        visual.innerHTML = defaultVisual;
+      }
+
+      function syncAccountIcon() {
+        var customer = getStoredCustomer();
+        var loggedIn = serverLoggedIn || !!customer;
+        accountIcon.classList.toggle('is-logged-in', loggedIn);
+        accountIcon.setAttribute('href', loggedIn ? accountUrl : loginUrl);
+        accountIcon.setAttribute('aria-label', loggedIn ? loggedInLabel : loggedOutLabel);
+        if (label) {
+          label.textContent = loggedIn ? loggedInLabel : loggedOutLabel;
+        }
+        if (loggedIn && customer) {
+          renderLoggedInVisual(customer);
+        } else if (!loggedIn) {
+          renderLoggedOutVisual();
+        }
+      }
+
+      syncAccountIcon();
+
       accountIcon.addEventListener('click', function(event) {
-        event.preventDefault();
-        
-        // If customer is logged in, redirect to account page
-        if (isLoggedIn) {
-          window.location.href = '/account';
+        var loggedIn = isLoggedIn();
+
+        if (loggedIn) {
+          event.preventDefault();
+          window.location.href = accountUrl;
           return;
         }
-        
-        // If not logged in, open the app-based login modal
-        if (window.lrOpenModal) {
+
+        if (typeof window.lrOpenModal === 'function') {
+          event.preventDefault();
           window.lrOpenModal('login');
-        } else {
-          // Fallback to login page if app not loaded
-          window.location.href = '/account/login';
+          return;
+        }
+
+        accountIcon.setAttribute('href', loginUrl);
+      });
+
+      window.addEventListener('shopify:customer:login', function() {
+        // Update icon visually; do NOT auto-redirect — user clicks the badge to go to /account
+        syncAccountIcon();
+      });
+
+      window.addEventListener('shopify:customer:logout', function() {
+        syncAccountIcon();
+      });
+
+      window.addEventListener('storage', function(event) {
+        if (event.key === 'shopify_customer' || event.key === 'lr_customer') {
+          syncAccountIcon();
         }
       });
     });
@@ -316,12 +395,12 @@
                         <h3>{{ item.title }}</h3>
                         <div class="quantity-selector">
                             <label for="quantity-{{item.id}}">Quantity:</label>
-                            <input type="number" 
-                                id="quantity-{{item.id}}" 
-                                class="quantity-input" 
-                                value="{{item.quantity}}" 
-                                min="1" 
-                                max="99" 
+                            <input type="number"
+                                id="quantity-{{item.id}}"
+                                class="quantity-input"
+                                value="{{item.quantity}}"
+                                min="1"
+                                max="99"
                                 data-id="{{item.id}}" />
                         </div>
                         <p>Price: {{ item.price | money }}</p>
@@ -329,14 +408,14 @@
                 </div>
             {% endfor %}
         </div>
-        
+
         {% if cart.total_price > 1 %}
             <div class="cart-summary">
                 <hr class="cart-divider">
                 <div class="cart-total">
                     <p>Total: <span class="cart-total-price">{{ cart.total_price | money }}</span></p>
                 </div>
-                
+
                 <div class="cart-actions">
                     <a href="/checkout" id="proceed-checkout" class="button button--primary">
                         Proceed to Checkout
@@ -562,7 +641,7 @@
     .popup-cart {
         width: 100%;
     }
-    
+
     .cart-actions {
         flex-direction: column;
     }
@@ -600,9 +679,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     quantity: 0
                 })
             });
-            
+
             const cart = await response.json();
-            
+
             // Wait for animation to complete before updating display
             setTimeout(() => {
                 updateCartDisplay(cart);
@@ -620,18 +699,18 @@ async function addToCart(formData) {
             body: formData
         });
         const item = await response.json();
-        
+
         // Fetch updated cart data
         const cartResponse = await fetch('/cart.js');
         const cart = await cartResponse.json();
-        
+
         // Show the popup cart
         popupCart.classList.remove('hidden');
         popupCart.classList.add('show');
-        
+
         // Update cart display with the new cart data
         updateCartDisplay(cart);
-        
+
         // Make sure cart summary is visible if there are items
         if (cart.item_count > 0) {
             if (cartSummary) {
@@ -672,12 +751,12 @@ function updateCartDisplay(cart) {
                         </div>
                         <div class="quantity-selector">
                             <label for="quantity-${item.id}">Quantity:</label>
-                            <input type="number" 
-                                id="quantity-${item.id}" 
-                                class="quantity-input" 
-                                value="${item.quantity}" 
-                                min="1" 
-                                max="99" 
+                            <input type="number"
+                                id="quantity-${item.id}"
+                                class="quantity-input"
+                                value="${item.quantity}"
+                                min="1"
+                                max="99"
                                 data-id="${item.id}" />
                         </div>
                         <p>Price: ${formatMoney(item.price)} Rs</p>
@@ -690,7 +769,7 @@ function updateCartDisplay(cart) {
         // Update cart summary and total price
         if (cartSummary) {
             cartSummary.style.display = 'block';
-            
+
             // Create cart summary content if it doesn't exist
             if (!cartSummary.querySelector('.cart-total')) {
                 cartSummary.innerHTML = `
@@ -710,7 +789,7 @@ function updateCartDisplay(cart) {
                 cartTotalPrice.textContent = `${formatMoney(cart.total_price)} Rs`;
             }
         }
-        
+
         if (emptyCartMessage) {
             emptyCartMessage.style.display = 'none';
         }
@@ -772,7 +851,7 @@ function updateCartDisplay(cart) {
                     quantity: parseInt(newQuantity)
                 })
             });
-            
+
             const cart = await response.json();
             updateCartDisplay(cart);
         } catch (error) {
@@ -785,7 +864,7 @@ function updateCartDisplay(cart) {
         event.preventDefault();
         popupCart.classList.remove('hidden');
         popupCart.classList.add('show');
-        
+
         try {
             const response = await fetch('/cart.js');
             const cart = await response.json();
@@ -827,14 +906,14 @@ function updateCartDisplay(cart) {
                 body: formData
             });
             const item = await response.json();
-            
+
             // Fetch updated cart data
             const cartResponse = await fetch('/cart.js');
             const cart = await cartResponse.json();
-            
+
             // Update the cart display
             updateCartDisplay(cart);
-            
+
             // Show the popup cart
             popupCart.classList.remove('hidden');
             popupCart.classList.add('show');

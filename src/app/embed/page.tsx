@@ -1,7 +1,7 @@
-'use client';
+"use client";
 
-import { useEffect, useState, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useEffect, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 
 interface ShopSettings {
   enableRegistration: boolean;
@@ -12,43 +12,57 @@ interface ShopSettings {
 
 function EmbedContent() {
   const searchParams = useSearchParams();
-  const shop = searchParams.get('shop') || '';
-  const oauthSuccess = searchParams.get('oauth_success');
+  const shop = searchParams.get("shop") || "";
+  const oauthSuccess = searchParams.get("oauth_success");
 
-  const urlMode = searchParams.get('mode') as 'login' | 'register' | 'forgot' | 'profile' | null;
-  const validMode = urlMode && ['login', 'register', 'forgot', 'profile'].includes(urlMode) ? urlMode : 'login';
-  const [mode, setMode] = useState<'login' | 'register' | 'forgot' | 'customers' | 'profile' | 'phone'>(validMode);
+  const urlMode = searchParams.get("mode") as
+    | "login"
+    | "register"
+    | "forgot"
+    | "profile"
+    | null;
+  const validMode =
+    urlMode && ["login", "register", "forgot", "profile"].includes(urlMode)
+      ? urlMode
+      : "login";
+  const [mode, setMode] = useState<
+    "login" | "register" | "forgot" | "customers" | "profile" | "phone"
+  >(validMode);
   const [profile, setProfile] = useState<any>(null);
-  const isAdmin = !!(searchParams.get('host') || searchParams.get('embedded'));
+  const isAdmin = !!(searchParams.get("host") || searchParams.get("embedded"));
   const [customers, setCustomers] = useState<any[]>([]);
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [otp, setOtp] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [otp, setOtp] = useState("");
   const [otpSent, setOtpSent] = useState(false);
-  const [otpStep, setOtpStep] = useState<'phone' | 'otp' | 'details'>('phone');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [otpStep, setOtpStep] = useState<"phone" | "otp" | "details">("phone");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
   const [settings, setSettings] = useState<ShopSettings | null>(null);
   const [settingsLoading, setSettingsLoading] = useState(true);
   const [needsVerification, setNeedsVerification] = useState(false);
-  const [verificationEmail, setVerificationEmail] = useState('');
+  const [verificationEmail, setVerificationEmail] = useState("");
   const [profileEdit, setProfileEdit] = useState<any>(null);
   const [profileSaving, setProfileSaving] = useState(false);
-  const [profileError, setProfileError] = useState('');
-  const [profileSuccess, setProfileSuccess] = useState('');
+  const [profileError, setProfileError] = useState("");
+  const [profileSuccess, setProfileSuccess] = useState("");
   const [showChangePassword, setShowChangePassword] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordSaving, setPasswordSaving] = useState(false);
-  const [passwordError, setPasswordError] = useState('');
-  const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordSuccess, setPasswordSuccess] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deletingCustomerId, setDeletingCustomerId] = useState<string | null>(
+    null,
+  );
+  const [adminActionMsg, setAdminActionMsg] = useState("");
 
   // Fetch shop settings and customers
   useEffect(() => {
@@ -66,16 +80,17 @@ function EmbedContent() {
   // Handle OAuth success on load
   useEffect(() => {
     if (oauthSuccess && shop) {
-      setSuccess('Logged in with Google successfully!');
+      setSuccess("Logged in with Google successfully!");
     }
   }, [oauthSuccess, shop]);
 
   // Auto-resize iframe and notify parent on login success
   useEffect(() => {
     const postResize = () => {
-      const height = document.documentElement.scrollHeight || document.body.scrollHeight;
+      const height =
+        document.documentElement.scrollHeight || document.body.scrollHeight;
       if (window.parent !== window) {
-        window.parent.postMessage({ type: 'lr_resize', height }, '*');
+        window.parent.postMessage({ type: "lr_resize", height }, "*");
       }
     };
     postResize();
@@ -83,24 +98,17 @@ function EmbedContent() {
     return () => clearTimeout(timer);
   }, [mode, error, success, settings, customers, profileEdit]);
 
-  useEffect(() => {
-    if (success && success.includes('Logged in successfully') && window.parent !== window) {
-      const customer = localStorage.getItem('lr_customer');
-      window.parent.postMessage({ type: 'lr_login_success', customer: customer ? JSON.parse(customer) : null }, '*');
-    }
-  }, [success]);
-
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
     setNeedsVerification(false);
     setLoading(true);
 
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ shopDomain: shop, email, password }),
       });
       const data = await res.json();
@@ -110,19 +118,23 @@ function EmbedContent() {
           setNeedsVerification(true);
           setVerificationEmail(email);
         }
-        setError(data.error || 'Login failed');
+        setError(data.error || "Login failed");
       } else {
-        setSuccess('Logged in successfully!');
-        localStorage.setItem('lr_customer', JSON.stringify(data.customer));
-        // Close modal by posting message to parent
+        // Persist in both keys so header reads correctly immediately
+        localStorage.setItem("lr_customer", JSON.stringify(data.customer));
+        localStorage.setItem("shopify_customer", JSON.stringify(data.customer));
         if (window.parent !== window) {
-          setTimeout(() => {
-            window.parent.postMessage({ type: 'lr_close_modal' }, '*');
-          }, 500);
+          // Directly notify parent — closes modal and updates icon
+          window.parent.postMessage(
+            { type: "lr_login_success", customer: data.customer },
+            "*",
+          );
+        } else {
+          setSuccess("Logged in successfully!");
         }
       }
     } catch {
-      setError('Network error');
+      setError("Network error");
     } finally {
       setLoading(false);
     }
@@ -130,49 +142,57 @@ function EmbedContent() {
 
   const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
     setLoading(true);
 
     try {
-      const res = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shopDomain: shop, email, password, firstName, lastName, phone }),
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          shopDomain: shop,
+          email,
+          password,
+          firstName,
+          lastName,
+          phone,
+        }),
       });
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || 'Registration failed');
+        setError(data.error || "Registration failed");
       } else if (data.requiresVerification) {
-        let msg = data.message || 'Please check your email to verify your account.';
+        let msg =
+          data.message || "Please check your email to verify your account.";
         if (data.shopifySync && data.shopifySync.ok === false) {
-          msg += ` (Shopify sync warning: ${data.shopifySync.reason || 'failed'})`;
+          msg += ` (Shopify sync warning: ${data.shopifySync.reason || "failed"})`;
         }
         setSuccess(msg);
-        setEmail('');
-        setPassword('');
-        setFirstName('');
-        setLastName('');
-        setPhone('');
+        setEmail("");
+        setPassword("");
+        setFirstName("");
+        setLastName("");
+        setPhone("");
         // Switch to login mode after registration
-        setMode('login');
+        setMode("login");
       } else {
-        let msg = 'Registered successfully!';
+        let msg = "Registered successfully!";
         if (data.shopifySync && data.shopifySync.ok === false) {
-          msg += ` Note: Shopify customer sync failed (${data.shopifySync.reason || 'unknown error'}).`;
+          msg += ` Note: Shopify customer sync failed (${data.shopifySync.reason || "unknown error"}).`;
         }
         setSuccess(msg);
-        setEmail('');
-        setPassword('');
-        setFirstName('');
-        setLastName('');
-        setPhone('');
+        setEmail("");
+        setPassword("");
+        setFirstName("");
+        setLastName("");
+        setPhone("");
         // Switch to login mode after registration
-        setMode('login');
+        setMode("login");
       }
     } catch {
-      setError('Network error');
+      setError("Network error");
     } finally {
       setLoading(false);
     }
@@ -181,49 +201,56 @@ function EmbedContent() {
   const handleLogout = async () => {
     setLoading(true);
     try {
-      await fetch('/api/auth/logout', { method: 'POST' }).catch(() => null);
+      await fetch("/api/auth/logout", { method: "POST" }).catch(() => null);
     } finally {
       setLoading(false);
+      // Clear iframe's own localStorage too
+      localStorage.removeItem("lr_customer");
+      localStorage.removeItem("shopify_customer");
       if (window.parent !== window) {
-        window.parent.postMessage({ type: 'lr_logout' }, '*');
+        window.parent.postMessage({ type: "lr_logout" }, "*");
       }
     }
   };
 
   const startProfileEdit = () => {
     setProfileEdit({ ...profile });
-    setProfileError('');
-    setProfileSuccess('');
+    setProfileError("");
+    setProfileSuccess("");
   };
 
   const cancelProfileEdit = () => {
     setProfileEdit(null);
-    setProfileError('');
-    setProfileSuccess('');
+    setProfileError("");
+    setProfileSuccess("");
   };
 
   const handleProfileUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    setProfileError('');
-    setProfileSuccess('');
+    setProfileError("");
+    setProfileSuccess("");
     setProfileSaving(true);
     try {
-      const res = await fetch('/api/customers', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: profile.id, shopDomain: shop, ...profileEdit }),
+      const res = await fetch("/api/customers", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: profile.id,
+          shopDomain: shop,
+          ...profileEdit,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
-        setProfileError(data.error || 'Update failed');
+        setProfileError(data.error || "Update failed");
       } else {
         setProfile(data.customer);
-        localStorage.setItem('lr_customer', JSON.stringify(data.customer));
-        setProfileSuccess('Profile updated successfully!');
+        localStorage.setItem("lr_customer", JSON.stringify(data.customer));
+        setProfileSuccess("Profile updated successfully!");
         setProfileEdit(null);
       }
     } catch {
-      setProfileError('Network error');
+      setProfileError("Network error");
     } finally {
       setProfileSaving(false);
     }
@@ -231,35 +258,40 @@ function EmbedContent() {
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    setPasswordError('');
-    setPasswordSuccess('');
+    setPasswordError("");
+    setPasswordSuccess("");
     if (newPassword !== confirmPassword) {
-      setPasswordError('Passwords do not match');
+      setPasswordError("Passwords do not match");
       return;
     }
     if (newPassword.length < 6) {
-      setPasswordError('Password must be at least 6 characters');
+      setPasswordError("Password must be at least 6 characters");
       return;
     }
     setPasswordSaving(true);
     try {
-      const res = await fetch('/api/auth/change-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ shopDomain: shop, customerId: profile.id, currentPassword, newPassword }),
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          shopDomain: shop,
+          customerId: profile.id,
+          currentPassword,
+          newPassword,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
-        setPasswordError(data.error || 'Failed to change password');
+        setPasswordError(data.error || "Failed to change password");
       } else {
-        setPasswordSuccess('Password changed successfully!');
-        setCurrentPassword('');
-        setNewPassword('');
-        setConfirmPassword('');
+        setPasswordSuccess("Password changed successfully!");
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
         setTimeout(() => setShowChangePassword(false), 1500);
       }
     } catch {
-      setPasswordError('Network error');
+      setPasswordError("Network error");
     } finally {
       setPasswordSaving(false);
     }
@@ -268,23 +300,23 @@ function EmbedContent() {
   const handleDeleteAccount = async () => {
     setDeleteLoading(true);
     try {
-      const res = await fetch('/api/customers', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/customers", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: profile.id, shopDomain: shop }),
       });
       const data = await res.json();
       if (!res.ok) {
-        setProfileError(data.error || 'Failed to delete account');
+        setProfileError(data.error || "Failed to delete account");
       } else {
-        localStorage.removeItem('lr_customer');
+        localStorage.removeItem("lr_customer");
         setProfile(null);
         if (window.parent !== window) {
-          window.parent.postMessage({ type: 'lr_logout' }, '*');
+          window.parent.postMessage({ type: "lr_logout" }, "*");
         }
       }
     } catch {
-      setProfileError('Network error');
+      setProfileError("Network error");
     } finally {
       setDeleteLoading(false);
       setShowDeleteConfirm(false);
@@ -293,73 +325,79 @@ function EmbedContent() {
 
   // Load profile from query if in profile mode
   useEffect(() => {
-    if (mode !== 'profile') return;
-    const raw = searchParams.get('customer');
+    if (mode !== "profile") return;
+    const raw = searchParams.get("customer");
     if (raw) {
-      try { setProfile(JSON.parse(decodeURIComponent(raw))); } catch { /* noop */ }
+      try {
+        setProfile(JSON.parse(decodeURIComponent(raw)));
+      } catch {
+        /* noop */
+      }
     } else if (window.parent !== window) {
       // Ask parent to send stored customer
-      window.parent.postMessage({ type: 'lr_request_customer' }, '*');
+      window.parent.postMessage({ type: "lr_request_customer" }, "*");
     }
   }, [mode, searchParams]);
 
   useEffect(() => {
     const onMsg = (e: MessageEvent) => {
-      if (e.data && e.data.type === 'lr_customer_data' && e.data.customer) {
+      if (e.data && e.data.type === "lr_customer_data" && e.data.customer) {
         setProfile(e.data.customer);
       }
     };
-    window.addEventListener('message', onMsg);
-    return () => window.removeEventListener('message', onMsg);
+    window.addEventListener("message", onMsg);
+    return () => window.removeEventListener("message", onMsg);
   }, []);
 
   const handleForgotSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
     setLoading(true);
 
     try {
-      const res = await fetch('/api/auth/forgot-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ shopDomain: shop, email }),
       });
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || 'Request failed');
+        setError(data.error || "Request failed");
       } else {
-        setSuccess(data.message || 'If an account exists, a reset link has been sent.');
-        setEmail('');
+        setSuccess(
+          data.message || "If an account exists, a reset link has been sent.",
+        );
+        setEmail("");
       }
     } catch {
-      setError('Network error');
+      setError("Network error");
     } finally {
       setLoading(false);
     }
   };
 
   const handleResendVerification = async () => {
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
     setLoading(true);
 
     try {
-      const res = await fetch('/api/auth/resend-verification', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ shopDomain: shop, email: verificationEmail }),
       });
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || 'Failed to resend');
+        setError(data.error || "Failed to resend");
       } else {
-        setSuccess(data.message || 'Verification email sent.');
+        setSuccess(data.message || "Verification email sent.");
       }
     } catch {
-      setError('Network error');
+      setError("Network error");
     } finally {
       setLoading(false);
     }
@@ -367,31 +405,31 @@ function EmbedContent() {
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
     setLoading(true);
 
     try {
-      const res = await fetch('/api/auth/phone/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/auth/phone/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ shopDomain: shop, phone }),
       });
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || 'Failed to send OTP');
+        setError(data.error || "Failed to send OTP");
       } else {
-        setSuccess(data.message || 'OTP sent');
+        setSuccess(data.message || "OTP sent");
         setOtpSent(true);
-        setOtpStep('otp');
+        setOtpStep("otp");
         if (data.devOtp) {
-          console.log('[dev] OTP:', data.devOtp);
+          console.log("[dev] OTP:", data.devOtp);
           setSuccess(`OTP sent. Dev OTP: ${data.devOtp}`);
         }
       }
     } catch {
-      setError('Network error');
+      setError("Network error");
     } finally {
       setLoading(false);
     }
@@ -399,14 +437,14 @@ function EmbedContent() {
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
+    setError("");
+    setSuccess("");
     setLoading(true);
 
     try {
-      const res = await fetch('/api/auth/phone/verify-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/auth/phone/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           shopDomain: shop,
           phone,
@@ -419,22 +457,59 @@ function EmbedContent() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || 'Invalid OTP');
+        setError(data.error || "Invalid OTP");
       } else {
-        setSuccess('Logged in successfully!');
-        localStorage.setItem('lr_customer', JSON.stringify(data.customer));
-        setOtpStep('phone');
-        setOtp('');
+        localStorage.setItem("lr_customer", JSON.stringify(data.customer));
+        localStorage.setItem("shopify_customer", JSON.stringify(data.customer));
+        setOtpStep("phone");
+        setOtp("");
         setOtpSent(false);
+        if (window.parent !== window) {
+          window.parent.postMessage(
+            { type: "lr_login_success", customer: data.customer },
+            "*",
+          );
+        } else {
+          setSuccess("Logged in successfully!");
+        }
       }
     } catch {
-      setError('Network error');
+      setError("Network error");
     } finally {
       setLoading(false);
     }
   };
 
-  const googleLoginUrl = `/api/auth/oauth/google?shop=${encodeURIComponent(shop)}&redirectTo=${encodeURIComponent(typeof window !== 'undefined' ? window.location.href : '')}`;
+  const handleAdminDeleteCustomer = async (id: string) => {
+    if (
+      !window.confirm(
+        "Delete this customer? This also removes them from Shopify.",
+      )
+    )
+      return;
+    setDeletingCustomerId(id);
+    setAdminActionMsg("");
+    try {
+      const res = await fetch("/api/customers", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, shopDomain: shop }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setAdminActionMsg(data.error || "Delete failed");
+      } else {
+        setCustomers((prev) => prev.filter((c) => c.id !== id));
+        setAdminActionMsg("Customer deleted successfully.");
+      }
+    } catch {
+      setAdminActionMsg("Network error");
+    } finally {
+      setDeletingCustomerId(null);
+    }
+  };
+
+  const googleLoginUrl = `/api/auth/oauth/google?shop=${encodeURIComponent(shop)}&redirectTo=${encodeURIComponent(typeof window !== "undefined" ? window.location.href : "")}`;
 
   const showSocial = settings?.enableSocialLogin;
 
@@ -446,24 +521,42 @@ function EmbedContent() {
     );
   }
 
-  if (mode === 'profile') {
+  if (mode === "profile") {
     const initials = profile
       ? [profile.firstName, profile.lastName]
           .filter(Boolean)
           .map((n: string) => n[0])
-          .join('')
-          .toUpperCase() || profile.email?.[0]?.toUpperCase() || '?'
-      : '?';
+          .join("")
+          .toUpperCase() ||
+        profile.email?.[0]?.toUpperCase() ||
+        "?"
+      : "?";
 
     const formatDate = (d: string | null) => {
-      if (!d) return '—';
-      return new Date(d).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+      if (!d) return "—";
+      return new Date(d).toLocaleDateString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      });
     };
 
-    const InfoRow = ({ label, value, children }: { label: string; value?: string; children?: React.ReactNode }) => (
+    const InfoRow = ({
+      label,
+      value,
+      children,
+    }: {
+      label: string;
+      value?: string;
+      children?: React.ReactNode;
+    }) => (
       <div className="flex justify-between items-start py-2 border-b border-gray-100 last:border-0">
         <span className="text-gray-500 text-sm">{label}</span>
-        {children || <span className="text-gray-900 text-sm font-medium text-right">{value || '—'}</span>}
+        {children || (
+          <span className="text-gray-900 text-sm font-medium text-right">
+            {value || "—"}
+          </span>
+        )}
       </div>
     );
 
@@ -480,115 +573,203 @@ function EmbedContent() {
             <div className="flex items-center gap-4">
               <div className="flex-shrink-0 w-16 h-16 rounded-full bg-gray-900 text-white flex items-center justify-center text-xl font-semibold overflow-hidden">
                 {profile.avatarUrl ? (
-                  <img src={profile.avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
+                  <img
+                    src={profile.avatarUrl}
+                    alt="Avatar"
+                    className="w-full h-full object-cover"
+                  />
                 ) : (
                   initials
                 )}
               </div>
               <div className="flex-1 min-w-0">
                 <h2 className="text-lg font-semibold text-gray-900 truncate">
-                  {[profile.firstName, profile.lastName].filter(Boolean).join(' ') || 'My Account'}
+                  {[profile.firstName, profile.lastName]
+                    .filter(Boolean)
+                    .join(" ") || "My Account"}
                 </h2>
-                <p className="text-sm text-gray-500 truncate">{profile.email}</p>
+                <p className="text-sm text-gray-500 truncate">
+                  {profile.email}
+                </p>
                 <div className="flex flex-wrap gap-1.5 mt-1.5">
                   {profile.emailVerified ? (
                     <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700">
-                      <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                      <svg
+                        className="w-3 h-3 mr-1"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
                       Email Verified
                     </span>
                   ) : (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-50 text-yellow-700">Email Unverified</span>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-50 text-yellow-700">
+                      Email Unverified
+                    </span>
                   )}
                   {profile.provider && (
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 capitalize">{profile.provider}</span>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700 capitalize">
+                      {profile.provider}
+                    </span>
                   )}
                 </div>
               </div>
             </div>
 
             {/* Alerts */}
-            {profileError && <div className="rounded bg-red-50 px-3 py-2 text-sm text-red-700">{profileError}</div>}
-            {profileSuccess && <div className="rounded bg-green-50 px-3 py-2 text-sm text-green-700">{profileSuccess}</div>}
+            {profileError && (
+              <div className="rounded bg-red-50 px-3 py-2 text-sm text-red-700">
+                {profileError}
+              </div>
+            )}
+            {profileSuccess && (
+              <div className="rounded bg-green-50 px-3 py-2 text-sm text-green-700">
+                {profileSuccess}
+              </div>
+            )}
 
             {/* Edit Form */}
             {profileEdit ? (
               <form onSubmit={handleProfileUpdate} className="space-y-4">
                 <div className="bg-white rounded-lg border border-gray-200 p-4 space-y-3">
-                  <h3 className="text-sm font-semibold text-gray-900">Edit Profile</h3>
+                  <h3 className="text-sm font-semibold text-gray-900">
+                    Edit Profile
+                  </h3>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">First Name</label>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                        First Name
+                      </label>
                       <input
                         type="text"
-                        value={profileEdit.firstName || ''}
-                        onChange={(e) => setProfileEdit({ ...profileEdit, firstName: e.target.value })}
+                        value={profileEdit.firstName || ""}
+                        onChange={(e) =>
+                          setProfileEdit({
+                            ...profileEdit,
+                            firstName: e.target.value,
+                          })
+                        }
                         className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Last Name</label>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                        Last Name
+                      </label>
                       <input
                         type="text"
-                        value={profileEdit.lastName || ''}
-                        onChange={(e) => setProfileEdit({ ...profileEdit, lastName: e.target.value })}
+                        value={profileEdit.lastName || ""}
+                        onChange={(e) =>
+                          setProfileEdit({
+                            ...profileEdit,
+                            lastName: e.target.value,
+                          })
+                        }
                         className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
                       />
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Phone</label>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                      Phone
+                    </label>
                     <input
                       type="tel"
-                      value={profileEdit.phone || ''}
-                      onChange={(e) => setProfileEdit({ ...profileEdit, phone: e.target.value })}
+                      value={profileEdit.phone || ""}
+                      onChange={(e) =>
+                        setProfileEdit({
+                          ...profileEdit,
+                          phone: e.target.value,
+                        })
+                      }
                       className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Address</label>
+                    <label className="block text-xs font-medium text-gray-600 mb-1">
+                      Address
+                    </label>
                     <input
                       type="text"
-                      value={profileEdit.address || ''}
-                      onChange={(e) => setProfileEdit({ ...profileEdit, address: e.target.value })}
+                      value={profileEdit.address || ""}
+                      onChange={(e) =>
+                        setProfileEdit({
+                          ...profileEdit,
+                          address: e.target.value,
+                        })
+                      }
                       className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">City</label>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                        City
+                      </label>
                       <input
                         type="text"
-                        value={profileEdit.city || ''}
-                        onChange={(e) => setProfileEdit({ ...profileEdit, city: e.target.value })}
+                        value={profileEdit.city || ""}
+                        onChange={(e) =>
+                          setProfileEdit({
+                            ...profileEdit,
+                            city: e.target.value,
+                          })
+                        }
                         className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">State</label>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                        State
+                      </label>
                       <input
                         type="text"
-                        value={profileEdit.state || ''}
-                        onChange={(e) => setProfileEdit({ ...profileEdit, state: e.target.value })}
+                        value={profileEdit.state || ""}
+                        onChange={(e) =>
+                          setProfileEdit({
+                            ...profileEdit,
+                            state: e.target.value,
+                          })
+                        }
                         className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
                       />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">ZIP Code</label>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                        ZIP Code
+                      </label>
                       <input
                         type="text"
-                        value={profileEdit.zipCode || ''}
-                        onChange={(e) => setProfileEdit({ ...profileEdit, zipCode: e.target.value })}
+                        value={profileEdit.zipCode || ""}
+                        onChange={(e) =>
+                          setProfileEdit({
+                            ...profileEdit,
+                            zipCode: e.target.value,
+                          })
+                        }
                         className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Country</label>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">
+                        Country
+                      </label>
                       <input
                         type="text"
-                        value={profileEdit.country || ''}
-                        onChange={(e) => setProfileEdit({ ...profileEdit, country: e.target.value })}
+                        value={profileEdit.country || ""}
+                        onChange={(e) =>
+                          setProfileEdit({
+                            ...profileEdit,
+                            country: e.target.value,
+                          })
+                        }
                         className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-gray-900 focus:outline-none"
                       />
                     </div>
@@ -600,7 +781,7 @@ function EmbedContent() {
                     disabled={profileSaving}
                     className="flex-1 rounded bg-gray-900 text-white py-2.5 text-sm font-medium hover:bg-gray-800 disabled:opacity-50"
                   >
-                    {profileSaving ? 'Saving…' : 'Save Changes'}
+                    {profileSaving ? "Saving…" : "Save Changes"}
                   </button>
                   <button
                     type="button"
@@ -617,7 +798,9 @@ function EmbedContent() {
                 {/* Personal Info Card */}
                 <div className="bg-white rounded-lg border border-gray-200 p-4">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-sm font-semibold text-gray-900">Personal Information</h3>
+                    <h3 className="text-sm font-semibold text-gray-900">
+                      Personal Information
+                    </h3>
                     <button
                       onClick={startProfileEdit}
                       className="text-xs font-medium text-gray-700 hover:text-gray-900 underline"
@@ -625,14 +808,21 @@ function EmbedContent() {
                       Edit
                     </button>
                   </div>
-                  <InfoRow label="Full Name" value={[profile.firstName, profile.lastName].filter(Boolean).join(' ')} />
+                  <InfoRow
+                    label="Full Name"
+                    value={[profile.firstName, profile.lastName]
+                      .filter(Boolean)
+                      .join(" ")}
+                  />
                   <InfoRow label="Email" value={profile.email} />
                   <InfoRow label="Phone" value={profile.phone} />
                 </div>
 
                 {/* Address Card */}
                 <div className="bg-white rounded-lg border border-gray-200 p-4">
-                  <h3 className="text-sm font-semibold text-gray-900 mb-3">Address</h3>
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3">
+                    Address
+                  </h3>
                   <InfoRow label="Street" value={profile.address} />
                   <InfoRow label="City" value={profile.city} />
                   <InfoRow label="State" value={profile.state} />
@@ -642,31 +832,60 @@ function EmbedContent() {
 
                 {/* Account Info Card */}
                 <div className="bg-white rounded-lg border border-gray-200 p-4">
-                  <h3 className="text-sm font-semibold text-gray-900 mb-3">Account</h3>
-                  <InfoRow label="Member Since" value={formatDate(profile.createdAt)} />
-                  <InfoRow label="Last Login" value={formatDate(profile.lastLoginAt)} />
-                  <InfoRow label="Account Status" value={profile.isActive ? 'Active' : 'Inactive'} />
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3">
+                    Account
+                  </h3>
+                  <InfoRow
+                    label="Member Since"
+                    value={formatDate(profile.createdAt)}
+                  />
+                  <InfoRow
+                    label="Last Login"
+                    value={formatDate(profile.lastLoginAt)}
+                  />
+                  <InfoRow
+                    label="Account Status"
+                    value={profile.isActive ? "Active" : "Inactive"}
+                  />
                   <InfoRow label="Login Method">
-                    <span className="text-sm font-medium text-gray-900 capitalize">{profile.provider || 'Email & Password'}</span>
+                    <span className="text-sm font-medium text-gray-900 capitalize">
+                      {profile.provider || "Email & Password"}
+                    </span>
                   </InfoRow>
                 </div>
 
                 {/* Security Card */}
                 <div className="bg-white rounded-lg border border-gray-200 p-4">
-                  <h3 className="text-sm font-semibold text-gray-900 mb-3">Security</h3>
+                  <h3 className="text-sm font-semibold text-gray-900 mb-3">
+                    Security
+                  </h3>
                   {!showChangePassword ? (
                     <button
-                      onClick={() => { setShowChangePassword(true); setPasswordError(''); setPasswordSuccess(''); }}
+                      onClick={() => {
+                        setShowChangePassword(true);
+                        setPasswordError("");
+                        setPasswordSuccess("");
+                      }}
                       className="w-full text-left text-sm text-gray-700 hover:text-gray-900 font-medium py-2 border-b border-gray-100 last:border-0"
                     >
                       Change Password →
                     </button>
                   ) : (
                     <form onSubmit={handleChangePassword} className="space-y-3">
-                      {passwordError && <div className="rounded bg-red-50 px-3 py-2 text-sm text-red-700">{passwordError}</div>}
-                      {passwordSuccess && <div className="rounded bg-green-50 px-3 py-2 text-sm text-green-700">{passwordSuccess}</div>}
+                      {passwordError && (
+                        <div className="rounded bg-red-50 px-3 py-2 text-sm text-red-700">
+                          {passwordError}
+                        </div>
+                      )}
+                      {passwordSuccess && (
+                        <div className="rounded bg-green-50 px-3 py-2 text-sm text-green-700">
+                          {passwordSuccess}
+                        </div>
+                      )}
                       <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Current Password</label>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                          Current Password
+                        </label>
                         <input
                           type="password"
                           value={currentPassword}
@@ -676,7 +895,9 @@ function EmbedContent() {
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">New Password</label>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                          New Password
+                        </label>
                         <input
                           type="password"
                           value={newPassword}
@@ -687,7 +908,9 @@ function EmbedContent() {
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-medium text-gray-600 mb-1">Confirm New Password</label>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">
+                          Confirm New Password
+                        </label>
                         <input
                           type="password"
                           value={confirmPassword}
@@ -703,7 +926,7 @@ function EmbedContent() {
                           disabled={passwordSaving}
                           className="flex-1 rounded bg-gray-900 text-white py-2 text-sm font-medium hover:bg-gray-800 disabled:opacity-50"
                         >
-                          {passwordSaving ? 'Saving…' : 'Update Password'}
+                          {passwordSaving ? "Saving…" : "Update Password"}
                         </button>
                         <button
                           type="button"
@@ -720,7 +943,9 @@ function EmbedContent() {
 
                 {/* Danger Zone */}
                 <div className="bg-white rounded-lg border border-red-200 p-4">
-                  <h3 className="text-sm font-semibold text-red-700 mb-3">Danger Zone</h3>
+                  <h3 className="text-sm font-semibold text-red-700 mb-3">
+                    Danger Zone
+                  </h3>
                   {!showDeleteConfirm ? (
                     <button
                       onClick={() => setShowDeleteConfirm(true)}
@@ -730,14 +955,19 @@ function EmbedContent() {
                     </button>
                   ) : (
                     <div className="space-y-3">
-                      <p className="text-sm text-red-600">Are you sure? This action cannot be undone. All your data will be permanently deleted.</p>
+                      <p className="text-sm text-red-600">
+                        Are you sure? This action cannot be undone. All your
+                        data will be permanently deleted.
+                      </p>
                       <div className="flex gap-2">
                         <button
                           onClick={handleDeleteAccount}
                           disabled={deleteLoading}
                           className="flex-1 rounded bg-red-600 text-white py-2 text-sm font-medium hover:bg-red-700 disabled:opacity-50"
                         >
-                          {deleteLoading ? 'Deleting…' : 'Yes, Delete My Account'}
+                          {deleteLoading
+                            ? "Deleting…"
+                            : "Yes, Delete My Account"}
                         </button>
                         <button
                           onClick={() => setShowDeleteConfirm(false)}
@@ -764,7 +994,7 @@ function EmbedContent() {
                     disabled={loading}
                     className="flex-1 rounded bg-gray-100 text-gray-700 py-2.5 text-sm font-medium hover:bg-gray-200 disabled:opacity-50"
                   >
-                    {loading ? 'Logging out…' : 'Logout'}
+                    {loading ? "Logging out…" : "Logout"}
                   </button>
                 </div>
               </>
@@ -780,18 +1010,34 @@ function EmbedContent() {
       {/* Mode tabs */}
       <div className="flex gap-2 mb-4 flex-wrap">
         <button
-          onClick={() => { setMode('login'); setError(''); setSuccess(''); setNeedsVerification(false); }}
+          onClick={() => {
+            setMode("login");
+            setError("");
+            setSuccess("");
+            setNeedsVerification(false);
+          }}
           className={`flex-1 py-2 text-sm font-medium rounded ${
-            mode === 'login' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700'
+            mode === "login"
+              ? "bg-gray-900 text-white"
+              : "bg-gray-100 text-gray-700"
           }`}
         >
           Login
         </button>
         {settings?.enablePhoneLogin && (
           <button
-            onClick={() => { setMode('phone'); setError(''); setSuccess(''); setOtpStep('phone'); setOtp(''); setOtpSent(false); }}
+            onClick={() => {
+              setMode("phone");
+              setError("");
+              setSuccess("");
+              setOtpStep("phone");
+              setOtp("");
+              setOtpSent(false);
+            }}
             className={`flex-1 py-2 text-sm font-medium rounded ${
-              mode === 'phone' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700'
+              mode === "phone"
+                ? "bg-gray-900 text-white"
+                : "bg-gray-100 text-gray-700"
             }`}
           >
             Phone
@@ -799,9 +1045,16 @@ function EmbedContent() {
         )}
         {settings?.enableRegistration !== false && (
           <button
-            onClick={() => { setMode('register'); setError(''); setSuccess(''); setNeedsVerification(false); }}
+            onClick={() => {
+              setMode("register");
+              setError("");
+              setSuccess("");
+              setNeedsVerification(false);
+            }}
             className={`flex-1 py-2 text-sm font-medium rounded ${
-              mode === 'register' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700'
+              mode === "register"
+                ? "bg-gray-900 text-white"
+                : "bg-gray-100 text-gray-700"
             }`}
           >
             Register
@@ -809,9 +1062,16 @@ function EmbedContent() {
         )}
         {isAdmin && (
           <button
-            onClick={() => { setMode('customers'); setError(''); setSuccess(''); setNeedsVerification(false); }}
+            onClick={() => {
+              setMode("customers");
+              setError("");
+              setSuccess("");
+              setNeedsVerification(false);
+            }}
             className={`flex-1 py-2 text-sm font-medium rounded ${
-              mode === 'customers' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700'
+              mode === "customers"
+                ? "bg-gray-900 text-white"
+                : "bg-gray-100 text-gray-700"
             }`}
           >
             Customers
@@ -834,10 +1094,14 @@ function EmbedContent() {
           )}
         </div>
       )}
-      {success && <p className="mb-3 rounded bg-green-50 px-3 py-2 text-sm text-green-700">{success}</p>}
+      {success && (
+        <p className="mb-3 rounded bg-green-50 px-3 py-2 text-sm text-green-700">
+          {success}
+        </p>
+      )}
 
       {/* Social login */}
-      {mode === 'login' && showSocial && (
+      {mode === "login" && showSocial && (
         <>
           <a
             href={googleLoginUrl}
@@ -875,7 +1139,7 @@ function EmbedContent() {
       )}
 
       {/* Login form */}
-      {mode === 'login' && (
+      {mode === "login" && (
         <form onSubmit={handleLoginSubmit} className="space-y-3">
           <input
             type="email"
@@ -897,7 +1161,12 @@ function EmbedContent() {
           <div className="flex justify-end">
             <button
               type="button"
-              onClick={() => { setMode('forgot'); setError(''); setSuccess(''); setNeedsVerification(false); }}
+              onClick={() => {
+                setMode("forgot");
+                setError("");
+                setSuccess("");
+                setNeedsVerification(false);
+              }}
               className="text-xs text-gray-500 hover:text-gray-800 underline"
             >
               Forgot password?
@@ -908,18 +1177,19 @@ function EmbedContent() {
             disabled={loading}
             className="w-full rounded bg-gray-900 text-white py-2 text-sm font-medium hover:bg-gray-800 disabled:opacity-50"
           >
-            {loading ? 'Please wait...' : 'Login'}
+            {loading ? "Please wait..." : "Login"}
           </button>
         </form>
       )}
 
       {/* Phone login form */}
-      {mode === 'phone' && (
+      {mode === "phone" && (
         <div className="space-y-3">
-          {otpStep === 'phone' && (
+          {otpStep === "phone" && (
             <form onSubmit={handleSendOtp} className="space-y-3">
               <p className="text-sm text-gray-600">
-                Enter your phone number and we will send you a verification code.
+                Enter your phone number and we will send you a verification
+                code.
               </p>
               <input
                 type="tel"
@@ -934,12 +1204,12 @@ function EmbedContent() {
                 disabled={loading}
                 className="w-full rounded bg-gray-900 text-white py-2 text-sm font-medium hover:bg-gray-800 disabled:opacity-50"
               >
-                {loading ? 'Sending...' : 'Send OTP'}
+                {loading ? "Sending..." : "Send OTP"}
               </button>
             </form>
           )}
 
-          {otpStep === 'otp' && (
+          {otpStep === "otp" && (
             <form onSubmit={handleVerifyOtp} className="space-y-3">
               <p className="text-sm text-gray-600">
                 Enter the 6-digit code sent to {phone}.
@@ -950,7 +1220,7 @@ function EmbedContent() {
                 maxLength={6}
                 placeholder="6-digit OTP"
                 value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
+                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
                 required
                 className="w-full rounded border-gray-300 px-3 py-2 text-sm focus:border-gray-500 focus:ring-gray-500 tracking-widest text-center text-lg"
               />
@@ -958,7 +1228,12 @@ function EmbedContent() {
                 <button
                   type="button"
                   disabled={loading}
-                  onClick={() => { setOtpStep('phone'); setOtp(''); setError(''); setSuccess(''); }}
+                  onClick={() => {
+                    setOtpStep("phone");
+                    setOtp("");
+                    setError("");
+                    setSuccess("");
+                  }}
                   className="rounded bg-gray-100 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 disabled:opacity-50"
                 >
                   Back
@@ -968,7 +1243,7 @@ function EmbedContent() {
                   disabled={loading}
                   className="rounded bg-gray-900 text-white py-2 text-sm font-medium hover:bg-gray-800 disabled:opacity-50"
                 >
-                  {loading ? 'Verifying...' : 'Verify'}
+                  {loading ? "Verifying..." : "Verify"}
                 </button>
               </div>
               <button
@@ -985,7 +1260,7 @@ function EmbedContent() {
       )}
 
       {/* Register form */}
-      {mode === 'register' && (
+      {mode === "register" && (
         <form onSubmit={handleRegisterSubmit} className="space-y-3">
           <input
             type="text"
@@ -1030,13 +1305,13 @@ function EmbedContent() {
             disabled={loading}
             className="w-full rounded bg-gray-900 text-white py-2 text-sm font-medium hover:bg-gray-800 disabled:opacity-50"
           >
-            {loading ? 'Please wait...' : 'Register'}
+            {loading ? "Please wait..." : "Register"}
           </button>
         </form>
       )}
 
       {/* Forgot password form */}
-      {mode === 'forgot' && (
+      {mode === "forgot" && (
         <form onSubmit={handleForgotSubmit} className="space-y-3">
           <p className="text-sm text-gray-600">
             Enter your email and we will send you a link to reset your password.
@@ -1054,11 +1329,15 @@ function EmbedContent() {
             disabled={loading}
             className="w-full rounded bg-gray-900 text-white py-2 text-sm font-medium hover:bg-gray-800 disabled:opacity-50"
           >
-            {loading ? 'Sending...' : 'Send Reset Link'}
+            {loading ? "Sending..." : "Send Reset Link"}
           </button>
           <button
             type="button"
-            onClick={() => { setMode('login'); setError(''); setSuccess(''); }}
+            onClick={() => {
+              setMode("login");
+              setError("");
+              setSuccess("");
+            }}
             className="w-full rounded bg-gray-100 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200"
           >
             Back to Login
@@ -1067,11 +1346,19 @@ function EmbedContent() {
       )}
 
       {/* Customers list (admin only) */}
-      {mode === 'customers' && (
+      {mode === "customers" && (
         <div>
           <p className="text-sm text-gray-600 mb-3">
-            {customers.length} customer{customers.length !== 1 ? 's' : ''} registered
+            {customers.length} customer{customers.length !== 1 ? "s" : ""}{" "}
+            registered
           </p>
+          {adminActionMsg && (
+            <div
+              className={`mb-3 rounded px-3 py-2 text-sm ${adminActionMsg.includes("success") ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}
+            >
+              {adminActionMsg}
+            </div>
+          )}
           {customers.length === 0 ? (
             <p className="text-sm text-gray-500">No customers yet.</p>
           ) : (
@@ -1079,22 +1366,66 @@ function EmbedContent() {
               <table className="min-w-full text-sm">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-2 py-1.5 text-left font-medium text-gray-700">Email</th>
-                    <th className="px-2 py-1.5 text-left font-medium text-gray-700">Name</th>
-                    <th className="px-2 py-1.5 text-left font-medium text-gray-700">Verified</th>
+                    <th className="px-2 py-1.5 text-left font-medium text-gray-700">
+                      Email
+                    </th>
+                    <th className="px-2 py-1.5 text-left font-medium text-gray-700">
+                      Name
+                    </th>
+                    <th className="px-2 py-1.5 text-left font-medium text-gray-700">
+                      Verified
+                    </th>
+                    <th className="px-2 py-1.5 text-left font-medium text-gray-700">
+                      Last Login
+                    </th>
+                    <th className="px-2 py-1.5 text-left font-medium text-gray-700">
+                      Shopify
+                    </th>
+                    <th className="px-2 py-1.5 text-left font-medium text-gray-700"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
                   {customers.map((c) => (
                     <tr key={c.id}>
-                      <td className="px-2 py-1.5 text-gray-900">{c.email}</td>
-                      <td className="px-2 py-1.5 text-gray-600">{c.firstName} {c.lastName}</td>
+                      <td className="px-2 py-1.5 text-gray-900 text-xs">
+                        {c.email}
+                      </td>
+                      <td className="px-2 py-1.5 text-gray-600 text-xs">
+                        {c.firstName} {c.lastName}
+                      </td>
                       <td className="px-2 py-1.5">
-                        <span className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium ${
-                          c.emailVerified ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {c.emailVerified ? 'Yes' : 'No'}
+                        <span
+                          className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium ${
+                            c.emailVerified
+                              ? "bg-green-100 text-green-800"
+                              : "bg-yellow-100 text-yellow-800"
+                          }`}
+                        >
+                          {c.emailVerified ? "Yes" : "No"}
                         </span>
+                      </td>
+                      <td className="px-2 py-1.5 text-gray-500 text-xs">
+                        {c.lastLoginAt
+                          ? new Date(c.lastLoginAt).toLocaleDateString()
+                          : "\u2014"}
+                      </td>
+                      <td className="px-2 py-1.5 text-xs">
+                        {c.shopifyCustomerId ? (
+                          <span className="text-green-600 font-medium">
+                            Synced
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">Pending</span>
+                        )}
+                      </td>
+                      <td className="px-2 py-1.5">
+                        <button
+                          onClick={() => handleAdminDeleteCustomer(c.id)}
+                          disabled={deletingCustomerId === c.id}
+                          className="text-xs text-red-600 hover:text-red-800 font-medium disabled:opacity-40"
+                        >
+                          {deletingCustomerId === c.id ? "\u2026" : "Delete"}
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -1110,7 +1441,13 @@ function EmbedContent() {
 
 export default function EmbedPage() {
   return (
-    <Suspense fallback={<div className="w-full max-w-sm mx-auto p-4 text-center"><div className="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-gray-900" /></div>}>
+    <Suspense
+      fallback={
+        <div className="w-full max-w-sm mx-auto p-4 text-center">
+          <div className="mx-auto h-6 w-6 animate-spin rounded-full border-2 border-gray-200 border-t-gray-900" />
+        </div>
+      }
+    >
       <EmbedContent />
     </Suspense>
   );

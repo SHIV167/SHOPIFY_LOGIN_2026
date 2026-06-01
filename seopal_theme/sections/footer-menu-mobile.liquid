@@ -37,20 +37,22 @@
           </a>
         </li>
         <li>
-          <a href="#" class="account-trigger">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle>
-            </svg>
+          <a href="{% if customer %}{{ routes.account_url }}{% else %}{{ routes.account_login_url }}{% endif %}" class="account-trigger" data-account-url="{{ routes.account_url }}" data-login-url="{{ routes.account_login_url }}" aria-label="{% if customer %}{{ 'customer.account_fallback' | t }}{% else %}{{ 'customer.log_in' | t }}{% endif %}">
+            <span class="account-trigger__visual" data-account-trigger-visual>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle>
+              </svg>
+            </span>
           </a>
         </li>
       </ul>
@@ -105,33 +107,114 @@
       width: 40px;
       height: 40px;
     }
+
+    .account-trigger__visual,
+    .lr-account-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .lr-account-badge {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #111;
+      color: #fff;
+      font-size: 1.4rem;
+      font-weight: 600;
+      line-height: 1;
+      text-transform: uppercase;
+    }
   }
 </style>
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    const accountTrigger = document.querySelector('.account-trigger');
-    const isLoggedIn = {% if customer %}true{% else %}false{% endif %};
-    
-    if (accountTrigger) {
-      accountTrigger.addEventListener('click', function(e) {
-        e.preventDefault();
-        
-        // If customer is logged in, redirect to account page
-        if (isLoggedIn) {
-          window.location.href = '/account';
-          return;
-        }
-        
-        // If not logged in, open the app-based login modal
-        if (window.lrOpenModal) {
-          window.lrOpenModal('login');
-        } else {
-          // Fallback to login page if app not loaded
-          window.location.href = '/account/login';
-        }
-      });
+    var accountTrigger = document.querySelector('.account-trigger');
+    if (!accountTrigger) return;
+
+    var accountUrl = accountTrigger.dataset.accountUrl || '/account';
+    var loginUrl = accountTrigger.dataset.loginUrl || '/account/login';
+    var loggedInLabel = {{ 'customer.account_fallback' | t | json }};
+    var loggedOutLabel = {{ 'customer.log_in' | t | json }};
+    var visual = accountTrigger.querySelector('[data-account-trigger-visual]');
+    var defaultVisual = visual ? visual.innerHTML : '';
+    var serverLoggedIn = {% if customer %}true{% else %}false{% endif %};
+
+    // Shopify session says logged out — wipe stale localStorage so icon shows correctly
+    if (!serverLoggedIn) {
+      localStorage.removeItem('lr_customer');
+      localStorage.removeItem('shopify_customer');
     }
+
+    function getStoredCustomer() {
+      try {
+        var raw = localStorage.getItem('shopify_customer') || localStorage.getItem('lr_customer');
+        return raw ? JSON.parse(raw) : null;
+      } catch (e) {
+        return null;
+      }
+    }
+
+    function isLoggedIn() {
+      return serverLoggedIn || !!getStoredCustomer();
+    }
+
+    function getCustomerInitials(customer) {
+      var first = customer && (customer.firstName || customer.first_name || customer.name || customer.email || '').trim();
+      if (!first) return 'U';
+      return first.charAt(0).toUpperCase();
+    }
+
+    function syncAccountTrigger() {
+      var customer = getStoredCustomer();
+      var loggedIn = serverLoggedIn || !!customer;
+      accountTrigger.classList.toggle('is-logged-in', loggedIn);
+      accountTrigger.setAttribute('href', loggedIn ? accountUrl : loginUrl);
+      accountTrigger.setAttribute('aria-label', loggedIn ? loggedInLabel : loggedOutLabel);
+      if (!visual) return;
+      if (loggedIn && customer) {
+        visual.innerHTML = '<span class="lr-account-badge" aria-hidden="true">' + getCustomerInitials(customer) + '</span>';
+      } else if (!loggedIn) {
+        visual.innerHTML = defaultVisual;
+      }
+    }
+
+    syncAccountTrigger();
+
+    accountTrigger.addEventListener('click', function(e) {
+      var loggedIn = isLoggedIn();
+
+      if (loggedIn) {
+        e.preventDefault();
+        window.location.href = accountUrl;
+        return;
+      }
+
+      if (typeof window.lrOpenModal === 'function') {
+        e.preventDefault();
+        window.lrOpenModal('login');
+        return;
+      }
+
+      accountTrigger.setAttribute('href', loginUrl);
+    });
+
+    window.addEventListener('shopify:customer:login', function() {
+      // Update icon visually; user clicks the badge to navigate to /account
+      syncAccountTrigger();
+    });
+
+    window.addEventListener('shopify:customer:logout', function() {
+      syncAccountTrigger();
+    });
+
+    window.addEventListener('storage', function(event) {
+      if (event.key === 'shopify_customer' || event.key === 'lr_customer') {
+        syncAccountTrigger();
+      }
+    });
   });
 </script>
 

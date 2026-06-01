@@ -490,6 +490,14 @@
         "padding_top": 36,
         "padding_bottom": 36
       }
+    },
+    "product_reviews": {
+      "type": "product-reviews",
+      "settings": {
+        "heading": "Customer Reviews",
+        "padding_top": 60,
+        "padding_bottom": 60
+      }
     }
   },
   "order": [
@@ -506,6 +514,7 @@
     "1727731509a9a85882",
     "product_faq_tab_yEVhEg",
     "slider_related_qEKTRP",
-    "featured_collection_7kqJpx"
+    "featured_collection_7kqJpx",
+    "product_reviews"
   ]
 }

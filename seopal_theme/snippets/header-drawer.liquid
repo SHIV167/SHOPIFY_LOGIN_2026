@@ -136,13 +136,120 @@
             </ul>
           </nav>
           <div class="menu-drawer__utility-links">
+            <script>
+              document.addEventListener('DOMContentLoaded', function() {
+                var accountTriggers = document.querySelectorAll('[data-account-trigger]');
+                if (!accountTriggers.length) return;
+
+                var loggedInLabel = {{ 'customer.account_fallback' | t | json }};
+                var loggedOutLabel = {{ 'customer.log_in' | t | json }};
+                var serverLoggedIn = {% if customer %}true{% else %}false{% endif %};
+
+                // Shopify session says logged out — wipe stale localStorage so icon shows correctly
+                if (!serverLoggedIn) {
+                  localStorage.removeItem('lr_customer');
+                  localStorage.removeItem('shopify_customer');
+                }
+
+                function getStoredCustomer() {
+                  try {
+                    var raw = localStorage.getItem('shopify_customer') || localStorage.getItem('lr_customer');
+                    return raw ? JSON.parse(raw) : null;
+                  } catch (e) {
+                    return null;
+                  }
+                }
+
+                function isLoggedIn() {
+                  return serverLoggedIn || !!getStoredCustomer();
+                }
+
+                function getCustomerInitials(customer) {
+                  var first = customer && (customer.firstName || customer.first_name || customer.name || customer.email || '').trim();
+                  if (!first) return 'U';
+                  return first.charAt(0).toUpperCase();
+                }
+
+                function syncTrigger(trigger) {
+                  var customer = getStoredCustomer();
+                  var loggedIn = serverLoggedIn || !!customer;
+                  var accountUrl = trigger.dataset.accountUrl || '/account';
+                  var loginUrl = trigger.dataset.loginUrl || '/account/login';
+                  var label = trigger.querySelector('[data-account-trigger-label]');
+                  var visual = trigger.querySelector('[data-account-trigger-visual]');
+                  if (!trigger.dataset.defaultVisual && visual) {
+                    trigger.dataset.defaultVisual = visual.innerHTML;
+                  }
+                  trigger.classList.toggle('is-logged-in', loggedIn);
+                  trigger.setAttribute('href', loggedIn ? accountUrl : loginUrl);
+                  trigger.setAttribute('aria-label', loggedIn ? loggedInLabel : loggedOutLabel);
+                  if (label) {
+                    label.textContent = loggedIn ? loggedInLabel : loggedOutLabel;
+                  }
+                  if (visual) {
+                    if (loggedIn && customer) {
+                      visual.innerHTML = '<span class="lr-account-badge" aria-hidden="true">' + getCustomerInitials(customer) + '</span>';
+                    } else if (!loggedIn && trigger.dataset.defaultVisual) {
+                      visual.innerHTML = trigger.dataset.defaultVisual;
+                    }
+                  }
+                }
+
+                function syncAllTriggers() {
+                  accountTriggers.forEach(syncTrigger);
+                }
+
+                syncAllTriggers();
+
+                accountTriggers.forEach(function(trigger) {
+                  trigger.addEventListener('click', function(event) {
+                    var loggedIn = isLoggedIn();
+                    var accountUrl = trigger.dataset.accountUrl || '/account';
+                    var loginUrl = trigger.dataset.loginUrl || '/account/login';
+
+                    if (loggedIn) {
+                      event.preventDefault();
+                      window.location.href = accountUrl;
+                      return;
+                    }
+
+                    if (typeof window.lrOpenModal === 'function') {
+                      event.preventDefault();
+                      window.lrOpenModal('login');
+                      return;
+                    }
+
+                    trigger.setAttribute('href', loginUrl);
+                  });
+                });
+
+                window.addEventListener('shopify:customer:login', function() {
+                  // Update icon visually; user clicks the badge to navigate to /account
+                  syncAllTriggers();
+                });
+
+                window.addEventListener('shopify:customer:logout', function() {
+                  syncAllTriggers();
+                });
+
+                window.addEventListener('storage', function(event) {
+                  if (event.key === 'shopify_customer' || event.key === 'lr_customer') {
+                    syncAllTriggers();
+                  }
+                });
+              });
+            </script>
             {%- if shop.customer_accounts_enabled -%}
               <a
                 href="{%- if customer -%}{{ routes.account_url }}{%- else -%}{{ routes.account_login_url }}{%- endif -%}"
                 class="menu-drawer__account link focus-inset h5 medium-hide large-up-hide"
+                data-account-trigger
+                data-account-url="{{ routes.account_url }}"
+                data-login-url="{{ routes.account_login_url }}"
+                aria-label="{% if customer %}{{ 'customer.account_fallback' | t }}{% else %}{{ 'customer.log_in' | t }}{% endif %}"
               >
                 {%- if section.settings.enable_customer_avatar -%}
-                  <account-icon>
+                  <account-icon data-account-trigger-visual>
                     {%- if customer and customer.has_avatar? -%}
                       {{ customer | avatar }}
                     {%- else -%}
@@ -152,17 +259,19 @@
                     {%- endif -%}
                   </account-icon>
                 {%- else -%}
-                  <span class="svg-wrapper">
+                  <span class="svg-wrapper" data-account-trigger-visual>
                     {{- 'icon-account.svg' | inline_asset_content -}}
                   </span>
                 {%- endif -%}
-                {%- liquid
-                  if customer
-                    echo 'customer.account_fallback' | t
-                  else
-                    echo 'customer.log_in' | t
-                  endif
-                -%}
+                <span data-account-trigger-label>
+                  {%- liquid
+                    if customer
+                      echo 'customer.account_fallback' | t
+                    else
+                      echo 'customer.log_in' | t
+                    endif
+                  -%}
+                </span>
               </a>
             {%- endif -%}
             {%- if localization.available_countries or localization.available_languages -%}
