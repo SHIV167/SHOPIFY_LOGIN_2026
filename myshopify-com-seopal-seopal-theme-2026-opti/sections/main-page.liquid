@@ -1,0 +1,973 @@
+{{ 'section-main-page.css' | asset_url | stylesheet_tag }}
+
+{%- style -%}
+  .section-{{ section.id }}-padding {
+    padding-top: {{ section.settings.padding_top | times: 0.75 | round: 0 }}px;
+    padding-bottom: {{ section.settings.padding_bottom | times: 0.75 | round: 0 }}px;
+  }
+
+  @media screen and (min-width: 750px) {
+    .section-{{ section.id }}-padding {
+      padding-top: {{ section.settings.padding_top }}px;
+      padding-bottom: {{ section.settings.padding_bottom }}px;
+    }
+  }
+{%- endstyle -%}
+
+<div class="page-width page-width--narrow section-{{ section.id }}-padding">
+  <h1 class="main-page-title page-title h0{% if settings.animations_reveal_on_scroll %} scroll-trigger animate--fade-in{% endif %}">
+    {{ page.title | escape }}
+  </h1>
+  <div class="rte{% if settings.animations_reveal_on_scroll %} scroll-trigger animate--slide-in{% endif %}">
+    {{ page.content }}
+  </div>
+</div>
+{% if template == 'page.ayurveda-template' %}
+  <!doctype html>
+  <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Sheopals Section</title>
+      <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+        }
+
+        .testimonialstoryblock {
+            width: 100%;
+            max-width: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .ingredients_secc {
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        .col-6 {
+            flex: 1 1 100%;
+        }
+
+        .green_tea .story-conent {
+            position: relative;
+            width: 100%;
+            height: auto;
+            background-color: #000;
+            aspect-ratio: 16 / 9; /* Ensures a proper video aspect ratio */
+            min-height: 200px; /* Prevents collapse */
+        }
+
+        .image-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .video-play-icon {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+        }
+
+        .video-play-icon img {
+            width: 60px;
+            height: 60px;
+            cursor: pointer;
+        }
+
+        .green_coffee .testimonial-inner {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            height: 100%;
+            padding: 20px;
+        }
+
+        .wrapp {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .ico-wrapp img {
+            width: 60px;
+            height: 60px;
+        }
+
+        .text-wrapp h4 {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+
+        .text-wrapp p {
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+
+        .read {
+            display: inline-block;
+            padding: 5px 10px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 0.8rem;
+        }
+
+        iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        @media (min-width: 768px) {
+            .ingredients_secc {
+                align-items: stretch;
+            }
+            .col-6 {
+                flex: 1 1 50%;
+                display: flex;
+            }
+            .green_tea, .green_coffee {
+                width: 100%;
+            }
+        }
+
+        /* Adjustments for smaller screens */
+        @media (max-width: 767px) {
+            .green_tea .story-conent {
+                aspect-ratio: 16 / 9; /* Keeps the same aspect ratio */
+                min-height: 200px; /* Prevents it from collapsing */
+            }
+
+            .video-play-icon img {
+                width: 40px; /* Smaller play button for mobile */
+                height: 40px;
+            }
+        }
+      </style>
+    </head>
+    <body>
+      <div class="testimonialstoryblock">
+        <section id="ingredients" class="ingredients_secc">
+          <div class="col-6 green_tea">
+            <div class="story-conent" id="video-container">
+              <div class="image-container">
+                <img
+                  src="https://cdn.shopify.com/s/files/1/0728/2081/8228/files/LiverX-THUMBNIL-YOUTUBE.png?v=1707128362"
+                  alt="LiverX Thumbnail"
+                >
+              </div>
+              <div class="video-play-icon">
+                <img
+                  src="https://cdn.shopify.com/s/files/1/0595/9480/1330/files/videoPlay.png"
+                  alt="Play Video"
+                  id="play-button"
+                >
+              </div>
+            </div>
+          </div>
+          <div class="col-6 green_coffee">
+            <div class="testimonial-inner">
+              <div class="wrapp">
+                <div class="ico-wrapp">
+                  <img
+                    src="https://cdn.shopify.com/s/files/1/0728/2081/8228/files/Experience.png?v=1707463537"
+                    alt="Experience"
+                  >
+                </div>
+                <div class="text-wrapp vcenter">
+                  <h4>Experience Company</h4>
+                  <p>
+                    Sheopals is a health and personal care products experience company that offers a vast range of
+                    products for all your healthcare needs.
+                  </p>
+                  <a href="#" class="read">Read More</a>
+                </div>
+              </div>
+              <div class="wrapp">
+                <div class="ico-wrapp">
+                  <img
+                    src="https://cdn.shopify.com/s/files/1/0728/2081/8228/files/quality.png?v=1707463510"
+                    alt="Quality"
+                  >
+                </div>
+                <div class="text-wrapp vcenter">
+                  <h4>Product Quality</h4>
+                  <p>
+                    Sheopals is a brand that offers a wide range of health and wellness quality products that are
+                    natural, effective, and chemical-free
+                  </p>
+                  <a href="#" class="read">Read More</a>
+                </div>
+              </div>
+              <div class="wrapp">
+                <div class="ico-wrapp">
+                  <img
+                    src="https://cdn.shopify.com/s/files/1/0728/2081/8228/files/Manufactring.png?v=1707463510"
+                    alt="Manufacturing"
+                  >
+                </div>
+                <div class="text-wrapp vcenter">
+                  <h4>Product Manufacturing</h4>
+                  <p>
+                    During the manufacturing process, we make sure to visit our manufacturing centre and conduct quality
+                    checks on the raw materials before sending them to the manufacturing unit
+                  </p>
+                  <a href="#" class="read">Read More</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const playButton = document.getElementById('play-button');
+            const videoContainer = document.getElementById('video-container');
+            const videoId = 'M_g25qWcki0'; // Extracted from the YouTube URL
+
+            playButton.addEventListener('click', function() {
+                const iframe = document.createElement('iframe');
+                iframe.src = `https://www.youtube.com/embed/${videoId}?autoplay=1`;
+                iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
+                iframe.allowFullscreen = true;
+
+                // Remove existing content
+                videoContainer.innerHTML = '';
+                // Add the iframe
+                videoContainer.appendChild(iframe);
+            });
+        });
+      </script>
+    </body>
+  </html>
+
+  <br>
+  <!doctype html>
+  <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Showcase Section</title>
+      <style>
+                    * {
+                        box-sizing: border-box;
+                        margin: 0;
+                        padding: 0;
+                    }
+
+                    body {
+                        font-family: Arial, sans-serif;
+                        line-height: 1.6;
+                    }
+
+                    .showcase {
+                        background-color: #f8f8f8;
+                        padding: 40px 0;
+                    }
+
+                    .page-width {
+                        max-width: 1200px;
+                        margin: 0 auto;
+                        padding: 0 20px;
+                    }
+
+                    .overlay_2 {
+                        text-align: center;
+                    }
+
+                    .overlay_2 img {
+                        max-width: 200px;
+                        margin-bottom: 20px;
+                    }
+
+                    .text h4 {
+                        font-size: 24px;
+                        margin-bottom: 10px;
+                    }
+
+                    .text p {
+                        font-size: 16px;
+                        margin-bottom: 5px;
+                    }
+
+                    .row {
+                        display: flex;
+                        flex-wrap: wrap;
+                        margin-top: 40px;
+                    }
+
+                    .col-md-3 {
+                        flex: 0 0 25%;
+                        padding: 0 15px;
+                        margin-bottom: 30px;
+                    }
+
+                    .ingredients_card {
+                        background-color: white;
+                        border-radius: 10px;
+                        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                        overflow: hidden;
+                        transition: transform 0.3s ease; /* Added transition */
+                    }
+
+                    .ingredients_card:hover {
+                        transform: scale(1.05); /* Added hover effect */
+                    }
+
+                    .img_sec img {
+                        width: 100%;
+                        height: auto;
+                    }
+
+                    .contennt {
+                        padding: 20px;
+                    }
+
+                    .contennt h4 {
+                        font-size: 18px;
+                        margin-bottom: 10px;
+                    }
+
+                    .contennt .tici,
+                    .contennt .ticii,
+                    .contennt .ticiii {
+                        width: 20px;
+                        height: 20px;
+                        margin-bottom: 10px;
+                    }
+
+                    .contennt p {
+                        font-size: 14px;
+                        color: #ffffff;
+                    }
+
+                    @media (max-width: 768px) {
+                        .col-md-3 {
+                            flex: 0 0 50%;
+                        }
+                    }
+
+                    @media (max-width: 480px) {
+                        .col-md-3 {
+                            flex: 0 0 100%;
+                        }
+                    }
+                    .ingredients_card {
+                  background: transparent;
+                  border-radius: 10px;
+                  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+                  overflow: hidden;
+                  transition: transform 0.3s ease, background-color 0.3s ease; /* Added background-color transition */
+              }
+
+              .ingredients_card:hover {
+                  transform: scale(1.05); /* Slight scaling on hover */
+                  background: #5d9e57; /* Light green background color on hover */
+              }
+              .showcase {
+            background-color: #5d9e57;
+            background-image: url('https://www.sheopals.com/cdn/shop/files/green_breaker-43.png?v=1706937335');
+            background-position: center;
+            background-size: contain;
+            color: #ffffff;
+            padding: 1em;
+            text-align: center;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="custom-html" id="section-template--22464632553780__custom_html_EfWYMU">
+        <div class="custom-html-content">
+          <section class="showcase">
+            <div class="page-width">
+              <div class="overlay overlay_2">
+                <img
+                  src="https://cdn.shopify.com/s/files/1/0728/2081/8228/files/page-breaker-white.png?v=1707105828"
+                  alt="Page breaker"
+                >
+                <div class="text">
+                  <h4>We are the solution to all your needs</h4>
+                  <p>Get everything you need for your health care with these amazing products</p>
+                  <p>that made with natural ingredients – no side effects.</p>
+                </div>
+
+                <div class="row">
+                  <div class="col-md-3 col-xs-6">
+                    <div class="ingredients_card">
+                      <div class="img_sec">
+                        <img
+                          src="https://cdn.shopify.com/s/files/1/0728/2081/8228/files/wyn1.png?v=1706949583"
+                          alt="Plant based"
+                          class="img-responsive"
+                        >
+                      </div>
+                      <div class="contennt">
+                        <h4>Plant based</h4>
+                        <img
+                          class="tici"
+                          src="https://cdn.shopify.com/s/files/1/0728/2081/8228/files/tickic.png?v=1706951776"
+                          alt="Tick"
+                        >
+                        <p>Identify and gather high-quality Ayurvedic herbs for optimal health and wellness</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-3 col-xs-6">
+                    <div class="ingredients_card">
+                      <div class="img_sec">
+                        <img
+                          src="https://cdn.shopify.com/s/files/1/0728/2081/8228/files/wyn2.png?v=1706949583"
+                          alt="Blend herbs"
+                          class="img-responsive"
+                        >
+                      </div>
+                      <div class="contennt">
+                        <h4>Blend herbs</h4>
+                        <img
+                          class="ticii"
+                          src="https://cdn.shopify.com/s/files/1/0728/2081/8228/files/tickic.png?v=1706951776"
+                          alt="Tick"
+                        >
+                        <p>
+                          Grind or powder the selected herbs and blend them according to traditional Ayurvedic
+                          practices.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-3 col-xs-6">
+                    <div class="ingredients_card">
+                      <div class="img_sec">
+                        <img
+                          src="https://cdn.shopify.com/s/files/1/0728/2081/8228/files/wyn3.png?v=1706949583"
+                          alt="Packaging"
+                          class="img-responsive"
+                        >
+                      </div>
+                      <div class="contennt">
+                        <h4>Packaging</h4>
+                        <img
+                          class="ticii"
+                          src="https://cdn.shopify.com/s/files/1/0728/2081/8228/files/tickic.png?v=1706951776"
+                          alt="Tick"
+                        >
+                        <p>Formulate measured powdered herbs and fill them into capsules</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-3 col-xs-6">
+                    <div class="ingredients_card">
+                      <div class="img_sec">
+                        <img
+                          src="https://cdn.shopify.com/s/files/1/0728/2081/8228/files/wyn4.png?v=1706949583"
+                          alt="Deliver"
+                          class="img-responsive"
+                        >
+                      </div>
+                      <div class="contennt">
+                        <h4>Deliver</h4>
+                        <img
+                          class="ticiii"
+                          src="https://cdn.shopify.com/s/files/1/0728/2081/8228/files/tickic.png?v=1706951776"
+                          alt="Tick"
+                        >
+                        <p>Deliver the ayurvedic goodness at your home</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </body>
+  </html>
+  <br>
+  <br>
+  <html>
+    <head>
+      <style>
+        .owl-carousel .item {
+          background-color: #5d9e57; /* Default background color */
+          padding: 20px;
+          margin: 5px;
+          border-radius: 5px;
+          text-align: center;
+          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+          transition: background-color 0.3s ease;
+        }
+
+        .img_sec {
+          display: none;
+        }
+
+        .owl-carousel .img_sec img, .owl-carousel .img_secc img {
+          filter: brightness(0) invert(1); /* Make the image white */
+          transition: filter 0.3s ease;
+        }
+
+        .owl-carousel h4 {
+          margin: 15px 0;
+          font-size: 18px;
+          color: #fff; /* Default text color is white */
+        }
+
+        .owl-carousel .readd a {
+          display: inline-block;
+          padding: 10px 20px;
+          background-color: #fff;
+          color: #5d9e57;
+          text-decoration: none;
+          border-radius: 5px;
+          transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .owl-carousel .item:hover {
+          background-color: #fff; /* Background color on hover */
+        }
+
+        .owl-carousel .item:hover .img_sec img,
+        .owl-carousel .item:hover .img_secc img {
+          filter: none; /* Change image to original (green) on hover */
+        }
+
+        .owl-carousel .item:hover h4 {
+          color: #5d9e57; /* Text color changes to green on hover */
+        }
+
+        .owl-carousel .item:hover .readd a {
+          background-color: #5d9e57;
+          color: #fff; /* Button text becomes white on hover */
+        }
+
+        /* Styles for navigation buttons */
+        .owl-nav {
+          position: absolute; /* Position absolute to the parent container */
+          top: 50%; /* Center vertically */
+          width: 100%; /* Full width of the carousel */
+          display: flex !important; /* Use flexbox to position buttons */
+          justify-content: space-between; /* Distribute buttons across the width */
+          transform: translateY(-50%); /* Center buttons vertically */
+          z-index: 10; /* Ensure it's on top */
+        }
+
+        .owl-prev, .owl-next {
+          background-color: #fff !important;  /* Background color of the buttons */
+          color: #5d9e57;          /* Color of the arrows */
+          border-radius: 50%;      /* Make buttons circular */
+          width: 40px;             /* Width of the buttons */
+          height: 40px;            /* Height of the buttons */
+          display: flex;           /* Use flexbox for centering */
+          align-items: center;     /* Center the content vertically */
+          justify-content: center;  /* Center the content horizontally */
+          font-size: 20px;         /* Font size for the arrows */
+          opacity: 0.8;            /* Slight transparency */
+          transition: background-color 0.3s ease, color 0.3s ease; /* Transition effects */
+        }
+
+        .owl-prev:hover, .owl-next:hover {
+          background-color: #5d9e57; /* Background color on hover */
+          color: #fff;               /* Text color on hover */
+        }
+
+        .owl-prev {
+          margin-left: 10px; /* Space from the left edge */
+        }
+
+        .owl-next {
+          margin-right: 10px; /* Space from the right edge */
+        }
+      </style>
+    </head>
+    <body>
+      <div class="owl-carousel carousel-product">
+        <div class="item">
+          <div class="ingree">
+            <div class="img_sec">
+              <img
+                src="https://cdn.shopify.com/s/files/1/0728/2081/8228/files/heart1.png?v=1706948020"
+                alt="Heart Care"
+              >
+            </div>
+            <div class="img_secc">
+              <img
+                src="https://cdn.shopify.com/s/files/1/0728/2081/8228/files/heart2.png?v=1706948106"
+                alt="Heart Care"
+              >
+            </div>
+            <h4>Heart Care</h4>
+            <div class="readd">
+              <a href="https://www.sheopals.com/products/hyper-care-bp-capsules">Know More</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="item">
+          <div class="ingree">
+            <div class="img_sec">
+              <img
+                src="https://cdn.shopify.com/s/files/1/0728/2081/8228/files/thy1.png?v=1706948020"
+                alt="Thyroid Care"
+              >
+            </div>
+            <div class="img_secc">
+              <img
+                src="https://cdn.shopify.com/s/files/1/0728/2081/8228/files/thy2.png?v=1706948106"
+                alt="Thyroid Care"
+              >
+            </div>
+            <h4>Thyroid Care</h4>
+            <div class="readd">
+              <a href="https://www.sheopals.com/products/thyrobic-capsule">Know More</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="item">
+          <div class="ingree">
+            <div class="img_sec">
+              <img src="https://cdn.shopify.com/s/files/1/0728/2081/8228/files/pil1.png?v=1706948020" alt="Piles Care">
+            </div>
+            <div class="img_secc">
+              <img src="https://cdn.shopify.com/s/files/1/0728/2081/8228/files/pil2.png?v=1706948106" alt="Piles Care">
+            </div>
+            <h4>Piles Care</h4>
+            <div class="readd">
+              <a href="https://www.sheopals.com/products/piles-care-capsules">Know More</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="item">
+          <div class="ingree">
+            <div class="img_sec">
+              <img
+                src="https://cdn.shopify.com/s/files/1/0728/2081/8228/files/mens.png?v=1706948019"
+                alt="Men's Wellness"
+              >
+            </div>
+            <div class="img_secc">
+              <img
+                src="https://cdn.shopify.com/s/files/1/0728/2081/8228/files/mens2.png?v=1706948106"
+                alt="Men's Wellness"
+              >
+            </div>
+            <h4>Men's Wellness</h4>
+            <div class="readd">
+              <a href="https://www.sheopals.com/products/herb-69-vibe-booster">Know More</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- jQuery and Owl Carousel JS -->
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/owl.carousel.min.js"></script>
+      <script>
+        $(document).ready(function(){
+          $(".owl-carousel").owlCarousel({
+            loop: true,
+            margin: 10,
+            nav: true,
+            autoplay: true,
+            autoplayTimeout: 3000,
+            responsive: {
+              0: {
+                items: 1
+              },
+              600: {
+                items: 2
+              },
+              1000: {
+                items: 4
+              }
+            }
+          });
+
+          // Pause autoplay on hover
+          $(".owl-carousel").on('mouseover', function() {
+            $(this).trigger('stop.owl.autoplay');
+          }).on('mouseout', function() {
+            $(this).trigger('play.owl.autoplay', [3000]);
+          });
+        });
+      </script>
+    </body>
+  </html>
+{% endif %}
+
+<br>
+{% if template == 'page.store-locator' %}
+  <div data-store-locator></div>
+{% endif %}
+
+{% if template == 'page.contact' %}
+  <html>
+    <body>
+      <div class="page-width">
+        <h1 class="main-page-title page-title h0">Free Consultation Form</h1>
+        <div class="rte">
+          <section class="contact_form">
+            <h4>Free Consultation Form</h4>
+            <div class="container">
+              <div class="row">
+                <div class="col-lg-6 col-sm-6">
+                  <img
+                    src="https://cdn.shopify.com/s/files/1/0728/2081/8228/files/health-expert.jpg?v=1698045341"
+                    srcset="https://cdn.shopify.com/s/files/1/0728/2081/8228/files/health-expert.jpg?v=1698045341 1024w, https://cdn.shopify.com/s/files/1/0728/2081/8228/files/health-expert.jpg?v=1698045341 768w"
+                    loading="lazy"
+                    alt="Health Expert"
+                    class="form-image"
+                  >
+                </div>
+                <div class="col-lg-6 col-sm-6">
+                  {% form 'contact' %}
+                    {{ form.errors | default_errors }}
+
+                    <div class="first-name">
+                      <label for="first-name">First name</label>
+                      <input type="text" name="contact[first_name]" id="first-name">
+                    </div>
+
+                    <div class="last-name">
+                      <label for="last-name">Last name</label>
+                      <input type="text" name="contact[last_name]" id="last-name">
+                    </div>
+
+                    <div class="phone">
+                      <label for="phone">Phone</label>
+                      <input type="tel" name="contact[phone]" id="phone">
+                    </div>
+
+                    <div class="email">
+                      <label for="email">Email</label>
+                      <input type="email" name="contact[email]" id="email">
+                    </div>
+
+                    <div class="order-number">
+                      <label for="order-number">Order number</label>
+                      <input type="text" name="contact[order_number]" id="order-number">
+                    </div>
+
+                    <div class="message">
+                      <label for="message">Message</label>
+                      <textarea name="contact[body]" id="message"></textarea>
+                    </div>
+
+                    <div class="submit">
+                      <input type="submit" value="SUBMIT">
+                    </div>
+                  {% endform %}
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <style>
+        .contact_form {
+            width: 100%;
+            display: inline-block;
+            text-align: center;
+            padding: 15px 0 30px;
+            background: #f9f9f9;
+        }
+        .contact_form h4 {
+            font-size: 30px;
+            color: #333333;
+            width: 100%;
+            display: inline-block;
+            margin: 5px 0 20px;
+            font-weight: bold;
+        }
+        .contact_form h5 {
+            font-size: 18px;
+            color: #333333;
+            width: 100%;
+            display: inline-block;
+            margin: 5px 0 20px;
+            font-weight: bold;
+        }
+        .modal-content {
+            border-radius: 20px;
+            text-align: center;
+            width: 100%;
+            border: none !important;
+            background: #fff;
+        }
+        .modal-body {
+            padding: 20px;
+        }
+        input[type="text"],
+        input[type="email"],
+        input[type="tel"],
+        input[type="submit"],
+        input[type="number"] {
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background: #f4f4f4;
+            padding: 10px;
+            width: 75%;
+            transition: border-color 0.3s ease;
+        }
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="number"]:focus {
+            border-color: #78c2ad; /* Change border color on focus */
+            outline: none; /* Remove outline */
+        }
+        input[type="radio"],
+        input[type="checkbox"] {
+            margin-right: 10px;
+            transform: scale(1.2); /* Scale up checkboxes and radio buttons */
+        }
+        .health-issues {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-start; /* Aligns items to the start */
+            margin-bottom: 20px; /* Adds space below the health issues */
+        }
+        .form-group {
+            flex: 1 1 50%; /* Two items per row */
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px; /* Adds space between items */
+        }
+        label {
+            display: flex;
+            align-items: center;
+            font-size: 18px;
+        }
+        .btn-info {
+            background-color: #07826a;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .box {
+            display: none; /* Initially hide all boxes */
+            margin-top: 10px; /* Space above box content */
+        }
+        .form-image {
+            max-width: 100%;
+            height: auto;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+        .col-lg-6,
+        .col-sm-6 {
+            flex: 1;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+        @media (max-width: 768px) {
+            .form-group {
+                flex: 1 1 100%; /* Stack items on smaller screens */
+            }
+            .col-lg-6,
+            .col-sm-6 {
+                flex: 1 1 100%; /* Full width on small screens */
+            }
+            .form-image {
+                width: 100%; /* Make the image full width */
+            }
+            .modal-content {
+                padding: 10px; /* Reduce padding */
+            }
+        }
+      </style>
+
+      <script>
+        function toggleBox(issue) {
+            // Hide all boxes first
+            document.querySelectorAll('.box').forEach(box => {
+                box.style.display = 'none';
+            });
+
+            // Show the selected box
+            const selectedBox = document.querySelector('.' + issue + '.box');
+            if (selectedBox) {
+                selectedBox.style.display = 'block';
+            }
+        }
+
+        document.querySelector("form").addEventListener("submit", function (e) {
+            const healthIssues = document.querySelector('input[name="healthissues"]:checked');
+            if (!healthIssues) {
+                e.preventDefault(); // Prevent form submission
+                alert("Please select at least one health issue.");
+            }
+        });
+      </script>
+    </body>
+  </html>
+{% endif %}
+
+{% schema %}
+{
+  "name": "t:sections.main-page.name",
+  "tag": "section",
+  "class": "section",
+  "settings": [
+    {
+      "type": "header",
+      "content": "t:sections.all.padding.section_padding_heading"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "t:sections.all.padding.padding_top",
+      "default": 36
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "t:sections.all.padding.padding_bottom",
+      "default": 36
+    }
+  ]
+}
+{% endschema %}
