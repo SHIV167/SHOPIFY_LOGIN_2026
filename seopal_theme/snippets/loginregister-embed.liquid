@@ -80,6 +80,12 @@
         window.dispatchEvent(new CustomEvent('shopify:customer:login', {
           detail: e.data.customer || null
         }));
+        // If the iframe requested a redirect to the storefront (e.g. /account/orders), perform it.
+        if (e.data && e.data.redirectTo) {
+          try {
+            window.location.href = e.data.redirectTo;
+          } catch (err) { /* ignore */ }
+        }
       }
       if (e.data && e.data.type === 'lr_logout') {
         clearCustomer();
