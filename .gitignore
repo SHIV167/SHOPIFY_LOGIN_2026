@@ -1,6 +1,6 @@
 node_modules
 .next
-.env
+*.env
 *.log
 *.rar
 *.zip
@@ -9,3 +9,4 @@ SHOPIFY_LOGIN_2026.env
 AWS_ALL_IN_ONE_EC2_SETUP.md
 NEW_APP_IMPLEMENTATION_GUIDE.md
 seopal_theme/REVIEW_INTEGRATION_GUIDE.md
+ 
