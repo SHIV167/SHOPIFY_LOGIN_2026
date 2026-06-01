@@ -183,18 +183,24 @@ function EmbedContent() {
         // Switch to login mode after registration
         setMode("login");
       } else {
-        let msg = "Registered successfully!";
-        if (data.shopifySync && data.shopifySync.ok === false) {
-          msg += ` Note: Shopify customer sync failed (${data.shopifySync.reason || "unknown error"}).`;
+        // Successful registration — auto-login the user in the embed and notify parent
+        try {
+          localStorage.setItem("lr_customer", JSON.stringify(data.customer));
+          localStorage.setItem("shopify_customer", JSON.stringify(data.customer));
+        } catch (_) {}
+
+        // If the API provided a storefront redirect URL, send it to the parent
+        if (window.parent !== window) {
+          window.parent.postMessage(
+            { type: "lr_login_success", customer: data.customer, redirectTo: data.redirectTo || null },
+            "*",
+          );
+        } else {
+          // Fallback for non-iframe usage
+          setSuccess("Registered and logged in successfully!");
+          // Optionally navigate within the iframe to profile
+          setMode("profile");
         }
-        setSuccess(msg);
-        setEmail("");
-        setPassword("");
-        setFirstName("");
-        setLastName("");
-        setPhone("");
-        // Switch to login mode after registration
-        setMode("login");
       }
     } catch {
       setError("Network error");
