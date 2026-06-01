@@ -120,11 +120,16 @@ function EmbedContent() {
         }
         setError(data.error || "Login failed");
       } else {
-        // Persist in both keys so header reads correctly immediately
-        localStorage.setItem("lr_customer", JSON.stringify(data.customer));
-        localStorage.setItem("shopify_customer", JSON.stringify(data.customer));
+        // Persist both keys so theme reads login state immediately
+        try {
+          localStorage.setItem("lr_customer", JSON.stringify(data.customer));
+          localStorage.setItem(
+            "shopify_customer",
+            JSON.stringify(data.customer),
+          );
+        } catch (_) {}
+        // Notify parent iframe host directly so it can update header and close modal
         if (window.parent !== window) {
-          // Directly notify parent — closes modal and updates icon
           window.parent.postMessage(
             { type: "lr_login_success", customer: data.customer },
             "*",
@@ -204,9 +209,11 @@ function EmbedContent() {
       await fetch("/api/auth/logout", { method: "POST" }).catch(() => null);
     } finally {
       setLoading(false);
-      // Clear iframe's own localStorage too
-      localStorage.removeItem("lr_customer");
-      localStorage.removeItem("shopify_customer");
+      // Clear iframe's local state
+      try {
+        localStorage.removeItem("lr_customer");
+        localStorage.removeItem("shopify_customer");
+      } catch (_) {}
       if (window.parent !== window) {
         window.parent.postMessage({ type: "lr_logout" }, "*");
       }
@@ -459,16 +466,18 @@ function EmbedContent() {
       if (!res.ok) {
         setError(data.error || "Invalid OTP");
       } else {
-        localStorage.setItem("lr_customer", JSON.stringify(data.customer));
-        localStorage.setItem("shopify_customer", JSON.stringify(data.customer));
+        try {
+          localStorage.setItem("lr_customer", JSON.stringify(data.customer));
+          localStorage.setItem(
+            "shopify_customer",
+            JSON.stringify(data.customer),
+          );
+        } catch (_) {}
         setOtpStep("phone");
         setOtp("");
         setOtpSent(false);
         if (window.parent !== window) {
-          window.parent.postMessage(
-            { type: "lr_login_success", customer: data.customer },
-            "*",
-          );
+          window.parent.postMessage({ type: "lr_login_success", customer: data.customer }, "*");
         } else {
           setSuccess("Logged in successfully!");
         }
@@ -482,10 +491,9 @@ function EmbedContent() {
 
   const handleAdminDeleteCustomer = async (id: string) => {
     if (
-      !window.confirm(
-        "Delete this customer? This also removes them from Shopify.",
+      !confirm(
+        "Delete this customer? This will also attempt to remove them from Shopify.",
       )
-    )
       return;
     setDeletingCustomerId(id);
     setAdminActionMsg("");
@@ -502,7 +510,8 @@ function EmbedContent() {
         setCustomers((prev) => prev.filter((c) => c.id !== id));
         setAdminActionMsg("Customer deleted successfully.");
       }
-    } catch {
+    } catch (e) {
+      console.error('[admin] delete customer failed', e);
       setAdminActionMsg("Network error");
     } finally {
       setDeletingCustomerId(null);
@@ -1354,7 +1363,7 @@ function EmbedContent() {
           </p>
           {adminActionMsg && (
             <div
-              className={`mb-3 rounded px-3 py-2 text-sm ${adminActionMsg.includes("success") ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}
+              className={`mb-3 rounded px-3 py-2 text-sm ${adminActionMsg.toLowerCase().includes("success") ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`
             >
               {adminActionMsg}
             </div>
@@ -1407,7 +1416,7 @@ function EmbedContent() {
                       <td className="px-2 py-1.5 text-gray-500 text-xs">
                         {c.lastLoginAt
                           ? new Date(c.lastLoginAt).toLocaleDateString()
-                          : "\u2014"}
+                          : "—"}
                       </td>
                       <td className="px-2 py-1.5 text-xs">
                         {c.shopifyCustomerId ? (
@@ -1424,7 +1433,7 @@ function EmbedContent() {
                           disabled={deletingCustomerId === c.id}
                           className="text-xs text-red-600 hover:text-red-800 font-medium disabled:opacity-40"
                         >
-                          {deletingCustomerId === c.id ? "\u2026" : "Delete"}
+                          {deletingCustomerId === c.id ? "…" : "Delete"}
                         </button>
                       </td>
                     </tr>
