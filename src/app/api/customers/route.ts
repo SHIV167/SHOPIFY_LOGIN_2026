@@ -13,12 +13,20 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Missing shop' }, { status: 400 });
     }
 
-    const shop = await prisma.shop.findUnique({
+    // Auto-create shop if not exists (no auth restriction)
+    let shop = await prisma.shop.findUnique({
       where: { shopifyDomain: shopDomain },
     });
 
     if (!shop) {
-      return NextResponse.json({ error: 'Shop not found' }, { status: 404 });
+      shop = await prisma.shop.create({
+        data: {
+          shopifyDomain: shopDomain,
+          accessToken: '', // No OAuth required
+          isActive: true,
+          loginRegisterSettings: { create: {} },
+        },
+      });
     }
 
     const customers = await prisma.customer.findMany({
@@ -46,12 +54,20 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'Missing id or shopDomain' }, { status: 400 });
     }
 
-    const shop = await prisma.shop.findUnique({
+    // Auto-create shop if not exists (no auth restriction)
+    let shop = await prisma.shop.findUnique({
       where: { shopifyDomain: shopDomain },
     });
 
     if (!shop) {
-      return NextResponse.json({ error: 'Shop not found' }, { status: 404 });
+      shop = await prisma.shop.create({
+        data: {
+          shopifyDomain: shopDomain,
+          accessToken: '', // No OAuth required
+          isActive: true,
+          loginRegisterSettings: { create: {} },
+        },
+      });
     }
 
     const customer = await prisma.customer.findFirst({
@@ -165,12 +181,20 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Missing id or shopDomain' }, { status: 400 });
     }
 
-    const shop = await prisma.shop.findUnique({
+    // Auto-create shop if not exists (no auth restriction)
+    let shop = await prisma.shop.findUnique({
       where: { shopifyDomain: shopDomain },
     });
 
     if (!shop) {
-      return NextResponse.json({ error: 'Shop not found' }, { status: 404 });
+      shop = await prisma.shop.create({
+        data: {
+          shopifyDomain: shopDomain,
+          accessToken: '', // No OAuth required
+          isActive: true,
+          loginRegisterSettings: { create: {} },
+        },
+      });
     }
 
     const customer = await prisma.customer.findFirst({

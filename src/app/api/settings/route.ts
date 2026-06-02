@@ -10,12 +10,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing shop' }, { status: 400 });
     }
 
-    const existingShop = await prisma.shop.findUnique({
+    // Auto-create shop if not exists (no auth restriction)
+    let existingShop = await prisma.shop.findUnique({
       where: { shopifyDomain: shop },
     });
 
     if (!existingShop) {
-      return NextResponse.json({ error: 'Shop not found' }, { status: 404 });
+      existingShop = await prisma.shop.create({
+        data: {
+          shopifyDomain: shop,
+          accessToken: '', // No OAuth required
+          isActive: true,
+          loginRegisterSettings: { create: {} },
+        },
+      });
     }
 
     const settings = await (prisma.loginRegisterSettings.upsert as any)({

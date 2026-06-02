@@ -34,9 +34,27 @@ export default function InstallPage() {
             type="submit"
             className="w-full rounded bg-gray-900 px-4 py-2 font-medium text-white hover:bg-gray-800"
           >
-            Install App
+            Install App (OAuth)
           </button>
         </form>
+
+        {/* Direct access without OAuth */}
+        <div className="mt-4">
+          <button
+            onClick={() => {
+              if (shop) {
+                window.location.href = `/admin?shop=${encodeURIComponent(shop)}`;
+              }
+            }}
+            disabled={!shop}
+            className="w-full rounded bg-green-600 px-4 py-2 font-medium text-white hover:bg-green-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+          >
+            Open Admin (No OAuth)
+          </button>
+          <p className="text-xs text-gray-500 mt-2 text-center">
+            Skip OAuth and go directly to the admin panel
+          </p>
+        </div>
       </div>
     </main>
   );
