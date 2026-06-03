@@ -26,21 +26,34 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // Whitelist safe-to-save fields
+    const allowedFields = [
+      'enableRegistration',
+      'enableSocialLogin',
+      'enablePhoneLogin',
+      'requireEmailVerification',
+      'emailProvider',
+      'emailFrom',
+      'emailFromName',
+      'smtpEnabled',
+      'smtpHost',
+      'smtpPort',
+      'smtpUser',
+      'smtpPass',
+      'smtpEncryption',
+      'smtpFromAddress',
+      'smtpFromName',
+    ];
+
+    const data: Record<string, unknown> = {};
+    for (const key of allowedFields) {
+      if (key in updates) data[key] = updates[key];
+    }
+
     const settings = await (prisma.loginRegisterSettings.upsert as any)({
       where: { shopId: existingShop.id },
-      update: {
-        enableRegistration: updates.enableRegistration,
-        enableSocialLogin: updates.enableSocialLogin,
-        enablePhoneLogin: updates.enablePhoneLogin,
-        requireEmailVerification: updates.requireEmailVerification,
-      },
-      create: {
-        shopId: existingShop.id,
-        enableRegistration: updates.enableRegistration ?? true,
-        enableSocialLogin: updates.enableSocialLogin ?? false,
-        enablePhoneLogin: updates.enablePhoneLogin ?? false,
-        requireEmailVerification: updates.requireEmailVerification ?? false,
-      },
+      update: data,
+      create: { shopId: existingShop.id, ...data },
     });
 
     return NextResponse.json({ success: true, settings });

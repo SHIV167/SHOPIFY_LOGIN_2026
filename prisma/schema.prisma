@@ -81,7 +81,22 @@ model LoginRegisterSettings {
   welcomeEmailSubject   String   @default("Welcome to {shop_name}!")
   welcomeEmailTemplate  String?  @db.Text
   verificationEmailSubject String @default("Verify your email address")
-  verificationEmailTemplate  String? @db.Text
+  verificationEmailTemplate  String?  @db.Text
+
+  // Email provider settings
+  emailProvider         String   @default("console")
+  emailFrom             String?
+  emailFromName         String?
+
+  // SMTP settings
+  smtpEnabled           Boolean  @default(false)
+  smtpHost              String?
+  smtpPort              Int      @default(587)
+  smtpUser              String?
+  smtpPass              String?  @db.Text
+  smtpEncryption        Boolean  @default(true)
+  smtpFromAddress       String?
+  smtpFromName          String?
 
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
